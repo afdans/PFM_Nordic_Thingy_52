@@ -4,12 +4,15 @@ var thingy;
 // Characteristics
 var temperatureCharacteristic;
 var pressureCharacteristic;
+var humidityCharacteristic;
 var motionRawDataCharacteristic;
-//Data Arrays
+// Data Arrays
 var arrTemp = [];
-var ArrTempTime = [];
+var arrTempTime = [];
 var arrPressure = [];
-var ArrPressureTime = [];
+var arrPressureTime = [];
+var arrHumidity = [];
+var arrHumidityTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
@@ -55,6 +58,7 @@ async function servicesInit() {
     const motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
     temperatureCharacteristic = await environmentService.getCharacteristic(UUID(TemperatureID));
     pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
+    humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
 }
 
@@ -62,9 +66,11 @@ async function dataRecordStart() {
     console.log("Data recording started");
     temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
     pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
+    humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
     motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.startNotifications();
     await pressureCharacteristic.startNotifications();
+    await humidityCharacteristic.startNotifications();
     await motionRawDataCharacteristic.startNotifications();
 }
 
@@ -72,9 +78,11 @@ async function dataRecordStop() {
     console.log("Data recording stopped");
     temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
     pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
+    humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
     motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.stopNotifications();
     await pressureCharacteristic.stopNotifications();
+    await humidityCharacteristic.stopNotifications();
     await motionRawDataCharacteristic.stopNotifications();
     submitData();
     console.log("Data saved in file");
@@ -94,11 +102,11 @@ function setRecordedData() {
     document.getElementById("accelZ").value = arrAccelZ.toString();
     document.getElementById("accelT").value = arrAccelTime.toString();
     document.getElementById("temp").value = arrTemp.toString();
-    document.getElementById("tempT").value = ArrTempTime.toString();
+    document.getElementById("tempT").value = arrTempTime.toString();
 }
 
 function readDataTemp() {
-    ArrTempTime.push(Date.now());
+    arrTempTime.push(Date.now());
     const { value } = this;
     const integer = value.getInt8(0, true);
     const decimal = value.getUint8(1, true);
@@ -108,13 +116,21 @@ function readDataTemp() {
 }
 
 function readDataPressure() {
-    ArrPressureTime.push(Date.now());
+    arrPressureTime.push(Date.now());
     const { value } = this;
     const integer = value.getInt32(0, true);
     const decimal = value.getUint8(1, true);
     const pressure = integer + decimal / 100;
     arrPressure.push(pressure);
     console.log(pressure);
+}
+
+function readDataHumidity() {
+    arrHumidityTime.push(Date.now());
+    const { value } = this;
+    const RH = value.getUint8(0, true);
+    arrHumidity.push(RH);
+    console.log(RH);
 }
 
 function readDataAccel() {
