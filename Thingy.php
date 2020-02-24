@@ -15,10 +15,11 @@
     <button onclick="dataRecordStop();">Stop Recording Data!</button>
     <button onclick="disconnect();">Disconnect!</button>
     <form name="testForm" id="myTestForm" action="" method="POST">
-        <input id="accelX" name="accelX" value="" hidden/>
-        <input id="accelY" name="accelY" value="" hidden/>
-        <input id="accelZ" name="accelZ" value="" hidden/>
-        <input id="time" name="time" value="" hidden/>
+        <input id="accelX" name="accelX" value="" hidden />
+        <input id="accelY" name="accelY" value="" hidden />
+        <input id="accelZ" name="accelZ" value="" hidden />
+        <input id="accelT" name="accelT" value="" hidden />
+        <input id="temp" name="temp" value="" hidden />
     </form>
     <!--button onclick="test();">Test Forms</button-->
     <script src="Thingy.js"></script>
@@ -30,8 +31,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $accelX = $_POST['accelX'];
         $accelY = $_POST["accelY"];
         $accelZ = $_POST['accelZ'];
-        $time = $_POST['time'];
-        fwrite($myFile, $accelX . "\n" . $accelY . "\n" . $accelZ . "\n" . $time . "\n");
+        $accelT = $_POST['accelT'];
+        $temp = $_POST['temp'];
+        $accel = "AccelX:" . $accelX . "\n" . "AccelY:" . $accelY . "\n" . "AccelZ:" . $accelZ . "\n" . "AccelT:" . $accelT . "\n";
+        $environment = "Temp:" . $temp . "\n";
+        fwrite($myFile, $accel . $environment);
     }
 }
 fclose($myFile);
