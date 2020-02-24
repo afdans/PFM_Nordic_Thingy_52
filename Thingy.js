@@ -5,6 +5,7 @@ var thingy;
 var temperatureCharacteristic;
 var pressureCharacteristic;
 var humidityCharacteristic;
+var gasCharacteristic;
 var motionRawDataCharacteristic;
 // Data Arrays
 var arrTemp = [];
@@ -13,6 +14,9 @@ var arrPressure = [];
 var arrPressureTime = [];
 var arrHumidity = [];
 var arrHumidityTime = [];
+var arrGasCO2 = [];
+var arrGasTVOC = [];
+var arrGasTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
@@ -59,6 +63,7 @@ async function servicesInit() {
     temperatureCharacteristic = await environmentService.getCharacteristic(UUID(TemperatureID));
     pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
+    gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
 }
 
@@ -67,10 +72,12 @@ async function dataRecordStart() {
     temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
     pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
+    gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
     motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.startNotifications();
     await pressureCharacteristic.startNotifications();
     await humidityCharacteristic.startNotifications();
+    await gasCharacteristic.startNotifications();
     await motionRawDataCharacteristic.startNotifications();
 }
 
@@ -79,10 +86,12 @@ async function dataRecordStop() {
     temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
     pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
+    gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
     motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.stopNotifications();
     await pressureCharacteristic.stopNotifications();
     await humidityCharacteristic.stopNotifications();
+    await gasCharacteristic.stopNotifications();
     await motionRawDataCharacteristic.stopNotifications();
     submitData();
     console.log("Data saved in file");
@@ -122,7 +131,7 @@ function readDataPressure() {
     const decimal = value.getUint8(1, true);
     const pressure = integer + decimal / 100;
     arrPressure.push(pressure);
-    console.log(pressure);
+    //console.log(pressure);
 }
 
 function readDataHumidity() {
@@ -130,7 +139,17 @@ function readDataHumidity() {
     const { value } = this;
     const RH = value.getUint8(0, true);
     arrHumidity.push(RH);
-    console.log(RH);
+    //console.log(RH);
+}
+
+function readDataGas(){
+    arrGasTime.push(Date.now());
+    const{value} =  this;
+    const CO2 = value.getUint16(0, true);
+    const TVOC = value.getUint16(2, true);
+    arrGasCO2.push(CO2);
+    arrGasTVOC.push(TVOC);
+    console.log(CO2, TVOC);
 }
 
 function readDataAccel() {
