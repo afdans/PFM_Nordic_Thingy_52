@@ -29,7 +29,7 @@ function disconnect() {
     console.log("Device disconnected");
 }
 
-async function servicesInit(){
+async function servicesInit() {
     motionService = await thingy.gatt.getPrimaryService(UUID(ServiceMotion));
     environmentService = await thingy.gatt.getPrimaryService(UUID(ServiceEnvironment));
     motionCharacteristic = await motionService.getCharacteristic(UUID(CharacteristicMotion));
@@ -47,11 +47,15 @@ async function dataRecordStart() {
 async function dataRecordStop() {
     console.log("Data recording stopped");
     motionCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
+    temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
     await motionCharacteristic.stopNotifications();
+    await temperatureCharacteristic.stopNotifications();
     document.getElementById("accelX").value = arrAccelX.toString();
     document.getElementById("accelY").value = arrAccelY.toString();
     document.getElementById("accelZ").value = arrAccelZ.toString();
     document.getElementById("accelT").value = arrAccelT.toString();
+    document.getElementById("temp").value = arrTemp.toString();
+    document.getElementById("tempT").value = ArrTempTime.toString();
     test();
     console.log("Data saved in file");
 }
@@ -68,8 +72,8 @@ function readDataAccel() {
     //console.log(accelX, accelY, accelZ);
 }
 
-function readDataTemp(){
-    const { value} = this;
+function readDataTemp() {
+    const { value } = this;
     const integer = value.getInt8(0, true);
     const decimal = value.getInt8(1, true);
     const temperature = integer + decimal / 100;
@@ -82,6 +86,6 @@ function test() {
     document.forms["myTestForm"].submit();
 }
 
-function UUID(id){
+function UUID(id) {
     return 'ef68' + id + '-9b35-4933-9b10-52ffa9740042';
 }
