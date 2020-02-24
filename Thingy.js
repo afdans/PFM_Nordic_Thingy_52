@@ -20,7 +20,10 @@ var arrGasTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
-var arrAccelTime = [];
+var arrGyroX = [];
+var arrGyroY = [];
+var arrGyroZ = [];
+var arrMotionRawTime = [];
 
 // Address Reference
 // https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
@@ -39,6 +42,7 @@ const OrientationID = '0403';
 const QuaternionID = '0404';
 const StepCounterID = '0405';
 const MotionRawDataID = '0406';
+const HeadingID = '0409';
 
 async function connect() {
     thingy = await navigator.bluetooth.requestDevice({
@@ -73,7 +77,7 @@ async function dataRecordStart() {
     pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
-    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
+    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataMotionRaw);
     await temperatureCharacteristic.startNotifications();
     await pressureCharacteristic.startNotifications();
     await humidityCharacteristic.startNotifications();
@@ -87,7 +91,7 @@ async function dataRecordStop() {
     pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
-    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
+    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataMotionRaw);
     await temperatureCharacteristic.stopNotifications();
     await pressureCharacteristic.stopNotifications();
     await humidityCharacteristic.stopNotifications();
@@ -109,7 +113,7 @@ function setRecordedData() {
     document.getElementById("accelX").value = arrAccelX.toString();
     document.getElementById("accelY").value = arrAccelY.toString();
     document.getElementById("accelZ").value = arrAccelZ.toString();
-    document.getElementById("accelT").value = arrAccelTime.toString();
+    document.getElementById("motionT").value = arrMotionRawTime.toString();
     document.getElementById("temp").value = arrTemp.toString();
     document.getElementById("tempT").value = arrTempTime.toString();
 }
@@ -142,24 +146,33 @@ function readDataHumidity() {
     //console.log(RH);
 }
 
-function readDataGas(){
+function readDataGas() {
     arrGasTime.push(Date.now());
-    const{value} =  this;
+    const { value } = this;
     const CO2 = value.getUint16(0, true);
     const TVOC = value.getUint16(2, true);
     arrGasCO2.push(CO2);
     arrGasTVOC.push(TVOC);
-    console.log(CO2, TVOC);
+    //console.log(CO2, TVOC);
 }
 
-function readDataAccel() {
-    arrAccelTime.push(Date.now());
+function readDataMotionRaw() {
+    arrMotionRawTime.push(Date.now());
     const { value } = this;
-    const accelX = value.getInt16(0, true) / 1000.0;
-    const accelY = value.getInt16(2, true) / 1000.0;
-    const accelZ = value.getInt16(4, true) / 1000.0;
+    // Acceleration
+    const accelX = value.getInt16(0, true) / 64;
+    const accelY = value.getInt16(2, true) / 64;
+    const accelZ = value.getInt16(4, true) / 64;
+    // Gyroscope
+    const gyroX = value.getInt16(6, true) / 2048;
+    const gyroY = value.getInt16(8, true) / 2048;
+    const gyroZ = value.getInt16(10, true) / 2048;
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
     //console.log(accelX, accelY, accelZ);
+    arrGyroX.push(gyroX);
+    arrGyroY.push(gyroY);
+    arrGyroZ.push(gyroZ);
+    console.log(gyroX, gyroY, gyroZ);
 }

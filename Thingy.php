@@ -18,7 +18,7 @@
         <input id="accelX" name="accelX" value="" hidden />
         <input id="accelY" name="accelY" value="" hidden />
         <input id="accelZ" name="accelZ" value="" hidden />
-        <input id="accelT" name="accelT" value="" hidden />
+        <input id="motionT" name="motionT" value="" hidden />
         <input id="tempT" name="tempT" value="" hidden />
         <input id="temp" name="temp" value="" hidden />
     </form>
@@ -31,10 +31,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $accelX = $_POST['accelX'];
         $accelY = $_POST["accelY"];
         $accelZ = $_POST['accelZ'];
-        $accelT = $_POST['accelT'];
+        $motionT = $_POST['motionT'];
         $temp = $_POST['temp'];
         $tempT = $_POST['tempT'];
-        $accel = "AccelX:" . $accelX . "\n" . "AccelY:" . $accelY . "\n" . "AccelZ:" . $accelZ . "\n" . "AccelT:" . $accelT . "\n";
+        $accel = "AccelX:" . $accelX . "\n" . "AccelY:" . $accelY . "\n" . "AccelZ:" . $accelZ . "\n" . "AccelT:" . $motionT . "\n";
         $environment = "Temp:" . $temp . "\n" . "TempT:" . $tempT . "\n";
         fwrite($myFile, $accel . $environment);
     }
