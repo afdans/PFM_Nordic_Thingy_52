@@ -1,4 +1,4 @@
-var thingy, motionService, environmentService, motionCharacteristic, temperatureCharacteristic;
+var thingy, motionService, environmentService, motionRawDataCharacteristic, temperatureCharacteristic;
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
@@ -18,10 +18,10 @@ const ColorID = '0205';
 
 // Motion
 const MotionID = '0400';
-const TapID = '402';
-const OrientationID = '403';
-const QuaternionID = '404';
-const StepCounterID = '405';
+const TapID = '0402';
+const OrientationID = '0403';
+const QuaternionID = '0404';
+const StepCounterID = '0405';
 const MotionRawDataID = '0406';
 
 async function connect() {
@@ -44,32 +44,53 @@ function disconnect() {
 async function servicesInit() {
     motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
     environmentService = await thingy.gatt.getPrimaryService(UUID(EnvironmentID));
-    motionCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
+    motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     temperatureCharacteristic = await environmentService.getCharacteristic(UUID(TemperatureID));
 }
 
 async function dataRecordStart() {
     console.log("Data recording started");
-    motionCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
+    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
     temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
-    await motionCharacteristic.startNotifications();
+    await motionRawDataCharacteristic.startNotifications();
     await temperatureCharacteristic.startNotifications();
 }
 
 async function dataRecordStop() {
     console.log("Data recording stopped");
-    motionCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
+    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
     temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
-    await motionCharacteristic.stopNotifications();
+    await motionRawDataCharacteristic.stopNotifications();
     await temperatureCharacteristic.stopNotifications();
+    submitData();
+    console.log("Data saved in file");
+}
+
+function submitData() {
+    document.forms["myTestForm"].submit();
+}
+
+function UUID(id) {
+    return 'ef68' + id + '-9b35-4933-9b10-52ffa9740042';
+}
+
+function setRecordedData() {
     document.getElementById("accelX").value = arrAccelX.toString();
     document.getElementById("accelY").value = arrAccelY.toString();
     document.getElementById("accelZ").value = arrAccelZ.toString();
     document.getElementById("accelT").value = arrAccelT.toString();
     document.getElementById("temp").value = arrTemp.toString();
     document.getElementById("tempT").value = ArrTempTime.toString();
-    test();
-    console.log("Data saved in file");
+}
+
+function readDataTemp() {
+    const { value } = this;
+    const integer = value.getInt8(0, true);
+    const decimal = value.getInt8(1, true);
+    const temperature = integer + decimal / 100;
+    arrTemp.push(temperature);
+    ArrTempTime.push(Date.now());
+    //console.log(temperature);
 }
 
 function readDataAccel() {
@@ -82,22 +103,4 @@ function readDataAccel() {
     arrAccelZ.push(accelZ);
     arrAccelT.push(Date.now());
     //console.log(accelX, accelY, accelZ);
-}
-
-function readDataTemp() {
-    const { value } = this;
-    const integer = value.getInt8(0, true);
-    const decimal = value.getInt8(1, true);
-    const temperature = integer + decimal / 100;
-    arrTemp.push(temperature);
-    ArrTempTime.push(Date.now());
-    console.log(temperature);
-}
-
-function test() {
-    document.forms["myTestForm"].submit();
-}
-
-function UUID(id) {
-    return 'ef68' + id + '-9b35-4933-9b10-52ffa9740042';
 }
