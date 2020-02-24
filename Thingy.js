@@ -6,18 +6,30 @@ var arrAccelT = [];
 var arrTemp = [];
 var ArrTempTime = [];
 
-const ServiceEnvironment = '0200';
-const CharacteristicTemperature = '0201';
+// Address Reference
+// https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
+// Environment
+const EnvironmentID = '0200';
+const TemperatureID = '0201';
+const PressureID = '0202';
+const HumidityID = '0203';
+const GasID = '0204';
+const ColorID = '0205';
 
-const ServiceMotion = '0400';
-const CharacteristicMotion = '0406';
+// Motion
+const MotionID = '0400';
+const TapID = '402';
+const OrientationID = '403';
+const QuaternionID = '404';
+const StepCounterID = '405';
+const MotionRawDataID = '0406';
 
 async function connect() {
     thingy = await navigator.bluetooth.requestDevice({
         filters: [{
             name: 'Thingy'
         }],
-        optionalServices: [UUID(ServiceMotion), UUID(ServiceEnvironment)]
+        optionalServices: [UUID(MotionID), UUID(EnvironmentID)]
     });
     await thingy.gatt.connect();
     console.log(thingy.name + " connected");
@@ -30,10 +42,10 @@ function disconnect() {
 }
 
 async function servicesInit() {
-    motionService = await thingy.gatt.getPrimaryService(UUID(ServiceMotion));
-    environmentService = await thingy.gatt.getPrimaryService(UUID(ServiceEnvironment));
-    motionCharacteristic = await motionService.getCharacteristic(UUID(CharacteristicMotion));
-    temperatureCharacteristic = await environmentService.getCharacteristic(UUID(CharacteristicTemperature));
+    motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
+    environmentService = await thingy.gatt.getPrimaryService(UUID(EnvironmentID));
+    motionCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
+    temperatureCharacteristic = await environmentService.getCharacteristic(UUID(TemperatureID));
 }
 
 async function dataRecordStart() {

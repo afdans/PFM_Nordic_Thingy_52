@@ -22,7 +22,6 @@
         <input id="tempT" name="tempT" value="" hidden />
         <input id="temp" name="temp" value="" hidden />
     </form>
-    <!--button onclick="test();">Test Forms</button-->
     <script src="Thingy.js"></script>
 </body>
 <?php
