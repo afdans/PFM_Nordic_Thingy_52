@@ -1,10 +1,19 @@
-var thingy, motionService, environmentService, motionRawDataCharacteristic, temperatureCharacteristic;
+// Global variables
+// Bluetooth Device
+var thingy;
+// Characteristics
+var temperatureCharacteristic;
+var pressureCharacteristic;
+var motionRawDataCharacteristic;
+//Data Arrays
+var arrTemp = [];
+var ArrTempTime = [];
+var arrPressure = [];
+var ArrPressureTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
-var arrAccelT = [];
-var arrTemp = [];
-var ArrTempTime = [];
+var arrAccelTime = [];
 
 // Address Reference
 // https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
@@ -42,26 +51,31 @@ function disconnect() {
 }
 
 async function servicesInit() {
-    motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
-    environmentService = await thingy.gatt.getPrimaryService(UUID(EnvironmentID));
-    motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
+    const environmentService = await thingy.gatt.getPrimaryService(UUID(EnvironmentID));
+    const motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
     temperatureCharacteristic = await environmentService.getCharacteristic(UUID(TemperatureID));
+    pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
+    motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
 }
 
 async function dataRecordStart() {
     console.log("Data recording started");
-    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
     temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
-    await motionRawDataCharacteristic.startNotifications();
+    pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
+    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.startNotifications();
+    await pressureCharacteristic.startNotifications();
+    await motionRawDataCharacteristic.startNotifications();
 }
 
 async function dataRecordStop() {
     console.log("Data recording stopped");
-    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
     temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
-    await motionRawDataCharacteristic.stopNotifications();
+    pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
+    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataAccel);
     await temperatureCharacteristic.stopNotifications();
+    await pressureCharacteristic.stopNotifications();
+    await motionRawDataCharacteristic.stopNotifications();
     submitData();
     console.log("Data saved in file");
 }
@@ -78,22 +92,33 @@ function setRecordedData() {
     document.getElementById("accelX").value = arrAccelX.toString();
     document.getElementById("accelY").value = arrAccelY.toString();
     document.getElementById("accelZ").value = arrAccelZ.toString();
-    document.getElementById("accelT").value = arrAccelT.toString();
+    document.getElementById("accelT").value = arrAccelTime.toString();
     document.getElementById("temp").value = arrTemp.toString();
     document.getElementById("tempT").value = ArrTempTime.toString();
 }
 
 function readDataTemp() {
+    ArrTempTime.push(Date.now());
     const { value } = this;
     const integer = value.getInt8(0, true);
-    const decimal = value.getInt8(1, true);
+    const decimal = value.getUint8(1, true);
     const temperature = integer + decimal / 100;
     arrTemp.push(temperature);
-    ArrTempTime.push(Date.now());
     //console.log(temperature);
 }
 
+function readDataPressure() {
+    ArrPressureTime.push(Date.now());
+    const { value } = this;
+    const integer = value.getInt32(0, true);
+    const decimal = value.getUint8(1, true);
+    const pressure = integer + decimal / 100;
+    arrPressure.push(pressure);
+    console.log(pressure);
+}
+
 function readDataAccel() {
+    arrAccelTime.push(Date.now());
     const { value } = this;
     const accelX = value.getInt16(0, true) / 1000.0;
     const accelY = value.getInt16(2, true) / 1000.0;
@@ -101,6 +126,5 @@ function readDataAccel() {
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
-    arrAccelT.push(Date.now());
     //console.log(accelX, accelY, accelZ);
 }
