@@ -7,6 +7,7 @@ var pressureCharacteristic;
 var humidityCharacteristic;
 var gasCharacteristic;
 var motionRawDataCharacteristic;
+var eulerCharacteristic;
 // Data Arrays
 var arrTemp = [];
 var arrTempTime = [];
@@ -27,6 +28,10 @@ var arrMagX = [];
 var arrMagY = [];
 var arrMagZ = [];
 var arrMotionRawTime = [];
+var arrRoll = [];
+var arrPitch = [];
+var arrYaw = [];
+var arrEulerTime = [];
 
 // Address Reference
 // https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
@@ -45,6 +50,7 @@ const OrientationID = '0403';
 const QuaternionID = '0404';
 const StepCounterID = '0405';
 const MotionRawDataID = '0406';
+const EulerID = '0407';
 const HeadingID = '0409';
 
 async function connect() {
@@ -72,6 +78,7 @@ async function servicesInit() {
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
+    eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
     console.log(thingy.name + " services ready");
 }
 
@@ -82,11 +89,13 @@ async function dataRecordStart() {
     humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
     motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataMotionRaw);
+    eulerCharacteristic.addEventListener('characteristicvaluechanged', readDataEuler);
     await temperatureCharacteristic.startNotifications();
     await pressureCharacteristic.startNotifications();
     await humidityCharacteristic.startNotifications();
     await gasCharacteristic.startNotifications();
     await motionRawDataCharacteristic.startNotifications();
+    await eulerCharacteristic.startNotifications();
 }
 
 async function dataRecordStop() {
@@ -96,11 +105,13 @@ async function dataRecordStop() {
     humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
     motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataMotionRaw);
+    eulerCharacteristic.removeEventListener('characteristicvaluechanged', readDataEuler);
     await temperatureCharacteristic.stopNotifications();
     await pressureCharacteristic.stopNotifications();
     await humidityCharacteristic.stopNotifications();
     await gasCharacteristic.stopNotifications();
     await motionRawDataCharacteristic.stopNotifications();
+    await eulerCharacteristic.stopNotifications();
     setRecordedData();
     submitData();
     console.log("Data saved in file");
@@ -134,6 +145,10 @@ function setRecordedData() {
     document.getElementById("magY").value = arrMagY.join(";");
     document.getElementById("magZ").value = arrMagZ.join(";");
     document.getElementById("motionT").value = arrMotionRawTime.join(";");
+    document.getElementById('roll').value = arrRoll.join(";");
+    document.getElementById('pitch').value = arrPitch.join(";");
+    document.getElementById('yaw').value = arrYaw.join(";");
+    document.getElementById('eulerT').value = arrEulerTime.join(";");
 }
 
 function readDataTemp() {
@@ -143,7 +158,6 @@ function readDataTemp() {
     const decimal = value.getUint8(1, true);
     const temperature = integer + decimal / 100;
     arrTemp.push(temperature);
-    //console.log(temperature);
 }
 
 function readDataPressure() {
@@ -153,7 +167,6 @@ function readDataPressure() {
     const decimal = value.getUint8(1, true);
     const pressure = integer + decimal / 100;
     arrPressure.push(pressure);
-    //console.log(pressure);
 }
 
 function readDataHumidity() {
@@ -161,7 +174,6 @@ function readDataHumidity() {
     const { value } = this;
     const RH = value.getUint8(0, true);
     arrHumidity.push(RH);
-    //console.log(RH);
 }
 
 function readDataGas() {
@@ -171,7 +183,6 @@ function readDataGas() {
     const TVOC = value.getUint16(2, true);
     arrGasCO2.push(CO2);
     arrGasTVOC.push(TVOC);
-    //console.log(CO2, TVOC);
 }
 
 function readDataMotionRaw() {
@@ -192,12 +203,21 @@ function readDataMotionRaw() {
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
-    //console.log(accelX, accelY, accelZ);
     arrGyroX.push(gyroX);
     arrGyroY.push(gyroY);
     arrGyroZ.push(gyroZ);
-    //console.log(gyroX, gyroY, gyroZ);
     arrMagX.push(magX);
     arrMagY.push(magY);
     arrMagZ.push(magZ);
+}
+
+function readDataEuler() {
+    arrEulerTime.push(Date.now());
+    const { value } = this;
+    const roll = value.getInt32(0, true) / 65536;
+    const pitch = value.getInt32(4, true) / 65536;
+    const yaw = value.getInt32(8, true) / 65536;
+    arrRoll.push(roll);
+    arrPitch.push(pitch);
+    arrYaw.push(yaw);
 }

@@ -25,3 +25,7 @@ define("MAGNETOMETER_X_ID", 'magX');
 define("MAGNETOMETER_Y_ID", 'magY');
 define("MAGNETOMETER_Z_ID", 'magZ');
 define("MOTION_TIME_ID", 'motionT');
+define("ROLL_ID", 'roll');
+define("PITCH_ID", 'pitch');
+define("YAW_ID", 'yaw');
+define("EULER_TIME_ID", 'eulerT');
