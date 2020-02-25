@@ -112,12 +112,22 @@ function UUID(id) {
 }
 
 function setRecordedData() {
+    document.getElementById("temp").value = arrTemp.toString();
+    document.getElementById("tempT").value = arrTempTime.toString();
+    document.getElementById("pressure").value = arrPressure.toString();
+    document.getElementById("pressureT").value = arrPressureTime.toString();
+    document.getElementById("humidity").value = arrHumidity.toString();
+    document.getElementById("humidityT").value = arrHumidityTime.toString();
+    document.getElementById("CO2").value = arrGasCO2.toString();
+    document.getElementById("TVOC").value = arrGasTVOC.toString();
+    document.getElementById("GasT").value = arrGasTime.toString();
     document.getElementById("accelX").value = arrAccelX.toString();
     document.getElementById("accelY").value = arrAccelY.toString();
     document.getElementById("accelZ").value = arrAccelZ.toString();
+    document.getElementById("gyroX").value = arrGyroX.toString();
+    document.getElementById("gyroY").value = arrGyroY.toString();
+    document.getElementById("gyroZ").value = arrGyroZ.toString();
     document.getElementById("motionT").value = arrMotionRawTime.toString();
-    document.getElementById("temp").value = arrTemp.toString();
-    document.getElementById("tempT").value = arrTempTime.toString();
 }
 
 function readDataTemp() {
