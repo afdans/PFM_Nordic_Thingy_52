@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<?php include'TagIds.php'?>
 <html lang="en">
 
 <head>
@@ -14,7 +15,7 @@
     <button onclick="dataRecordStart();">Start Recording Data!</button>
     <button onclick="dataRecordStop();">Stop Recording Data!</button>
     <button onclick="disconnect();">Disconnect!</button>
-    <form name="testForm" id="myTestForm" action="Thingy.php" method="post">
+    <form name="testForm" id="myTestForm" action="DataSave.php" method="post">
         <input id="temp" name="temp" value="" hidden />
         <input id="tempT" name="tempT" value="" hidden />
         <input id="pressure" name="pressure" value="" hidden />
