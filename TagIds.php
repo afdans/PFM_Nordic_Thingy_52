@@ -16,8 +16,8 @@ define("GAS_TIME_ID", "GasT");
 
 // Motion
 define("ACCELERATION_X_ID", 'accelX');
-define("ACCELERATION_Y_ID", 'accelX');
-define("ACCELERATION_Z_ID", 'accelX');
+define("ACCELERATION_Y_ID", 'accelY');
+define("ACCELERATION_Z_ID", 'accelZ');
 define("GYROSCOPE_X_ID", 'gyroX');
 define("GYROSCOPE_Y_ID", 'gyroY');
 define("GYROSCOPE_Z_ID", 'gyroZ');
