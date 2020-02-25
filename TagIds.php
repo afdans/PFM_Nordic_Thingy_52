@@ -21,4 +21,7 @@ define("ACCELERATION_Z_ID", 'accelZ');
 define("GYROSCOPE_X_ID", 'gyroX');
 define("GYROSCOPE_Y_ID", 'gyroY');
 define("GYROSCOPE_Z_ID", 'gyroZ');
+define("MAGNETOMETER_X_ID", 'magX');
+define("MAGNETOMETER_Y_ID", 'magY');
+define("MAGNETOMETER_Z_ID", 'magZ');
 define("MOTION_TIME_ID", 'motionT');

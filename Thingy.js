@@ -23,6 +23,9 @@ var arrAccelZ = [];
 var arrGyroX = [];
 var arrGyroY = [];
 var arrGyroZ = [];
+var arrMagX = [];
+var arrMagY = [];
+var arrMagZ = [];
 var arrMotionRawTime = [];
 
 // Address Reference
@@ -127,6 +130,9 @@ function setRecordedData() {
     document.getElementById("gyroX").value = arrGyroX.join(";");
     document.getElementById("gyroY").value = arrGyroY.join(";");
     document.getElementById("gyroZ").value = arrGyroZ.join(";");
+    document.getElementById("magX").value = arrMagX.join(";");
+    document.getElementById("magY").value = arrMagY.join(";");
+    document.getElementById("magZ").value = arrMagZ.join(";");
     document.getElementById("motionT").value = arrMotionRawTime.join(";");
 }
 
@@ -172,13 +178,17 @@ function readDataMotionRaw() {
     arrMotionRawTime.push(Date.now());
     const { value } = this;
     // Acceleration
-    const accelX = value.getInt16(0, true) / 64;
-    const accelY = value.getInt16(2, true) / 64;
-    const accelZ = value.getInt16(4, true) / 64;
+    const accelX = value.getInt16(0, true) / 1024;
+    const accelY = value.getInt16(2, true) / 1024;
+    const accelZ = value.getInt16(4, true) / 1024;
     // Gyroscope
     const gyroX = value.getInt16(6, true) / 2048;
     const gyroY = value.getInt16(8, true) / 2048;
     const gyroZ = value.getInt16(10, true) / 2048;
+    // Magnetometer
+    const magX = value.getInt16(12, true) / 4096;
+    const magY = value.getInt16(14, true) / 4096;
+    const magZ = value.getInt16(16, true) / 4096;
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
@@ -186,5 +196,8 @@ function readDataMotionRaw() {
     arrGyroX.push(gyroX);
     arrGyroY.push(gyroY);
     arrGyroZ.push(gyroZ);
-    console.log(gyroX, gyroY, gyroZ);
+    //console.log(gyroX, gyroY, gyroZ);
+    arrMagX.push(magX);
+    arrMagY.push(magY);
+    arrMagZ.push(magZ);
 }
