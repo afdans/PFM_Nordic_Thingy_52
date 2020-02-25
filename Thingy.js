@@ -69,6 +69,7 @@ async function servicesInit() {
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
+    console.log(thingy.name + " services ready");
 }
 
 async function dataRecordStart() {
@@ -97,6 +98,7 @@ async function dataRecordStop() {
     await humidityCharacteristic.stopNotifications();
     await gasCharacteristic.stopNotifications();
     await motionRawDataCharacteristic.stopNotifications();
+    setRecordedData();
     submitData();
     console.log("Data saved in file");
 }
