@@ -26,12 +26,13 @@ function getEnvironmentData()
 
 function getMotionData()
 {
+    $quat = "QuatW;" . $_POST[QUATERNION_W_ID] . "\nQuatX;" . $_POST[QUATERNION_X_ID] . "\nQuatY;" . $_POST[QUATERNION_Y_ID] . "\nQuatZ;" . $_POST[QUATERNION_Z_ID] . "\nQuatT;" . $_POST[QUATERNION_TIME_ID] . "\n";
     $accel = "AccelX;" . $_POST[ACCELERATION_X_ID] . "\nAccelY;" . $_POST[ACCELERATION_Y_ID] . "\nAccelZ;" . $_POST[ACCELERATION_Z_ID] . "\n";
     $gyro = "GyroX;" . $_POST[GYROSCOPE_X_ID] . "\nGyroY;" . $_POST[GYROSCOPE_Y_ID] . "\nGyroZ;" . $_POST[GYROSCOPE_Z_ID] . "\n";
     $mag = "MagX;" . $_POST[MAGNETOMETER_X_ID] . "\nMagY;" . $_POST[MAGNETOMETER_Y_ID] . "\nMagZ;" . $_POST[MAGNETOMETER_Z_ID] . "\n";
     $rawMotion =  $accel . $gyro . $mag . "MotionT;" . $_POST[MOTION_TIME_ID] . "\n";
     $euler = "Roll;" . $_POST[ROLL_ID] . "\nPitch;" . $_POST[PITCH_ID] ."\nYaw;" . $_POST[YAW_ID] . "\nEulerT;" . $_POST[EULER_TIME_ID] . "\n";
-    $motion = $rawMotion . $euler;
+    $motion = $quat . $rawMotion . $euler;
     return $motion;
 }
 

@@ -15,6 +15,11 @@ define("TVOC_ID", "TVOC");
 define("GAS_TIME_ID", "GasT");
 
 // Motion
+define("QUATERNION_W_ID", 'quatW');
+define("QUATERNION_X_ID", 'quatX');
+define("QUATERNION_Y_ID", 'quatY');
+define("QUATERNION_Z_ID", 'quatZ');
+define("QUATERNION_TIME_ID", 'quatT');
 define("ACCELERATION_X_ID", 'accelX');
 define("ACCELERATION_Y_ID", 'accelY');
 define("ACCELERATION_Z_ID", 'accelZ');

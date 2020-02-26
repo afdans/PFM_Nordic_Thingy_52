@@ -6,6 +6,7 @@ var temperatureCharacteristic;
 var pressureCharacteristic;
 var humidityCharacteristic;
 var gasCharacteristic;
+var quaternionCharacteristic;
 var motionRawDataCharacteristic;
 var eulerCharacteristic;
 // Data Arrays
@@ -18,6 +19,11 @@ var arrHumidityTime = [];
 var arrGasCO2 = [];
 var arrGasTVOC = [];
 var arrGasTime = [];
+var arrQuatW = [];
+var arrQuatX = [];
+var arrQuatY = [];
+var arrQuatZ = [];
+var arrQuatTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
@@ -77,6 +83,7 @@ async function servicesInit() {
     pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
+    quaternionCharacteristic = await motionService.get(UUID(QuaternionID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
     console.log(thingy.name + " services ready");
@@ -88,12 +95,14 @@ async function dataRecordStart() {
     pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
+    quaternionCharacteristic.addEventListener('characteristicvaluechanged', readDataQuaternion);
     motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataMotionRaw);
     eulerCharacteristic.addEventListener('characteristicvaluechanged', readDataEuler);
     await temperatureCharacteristic.startNotifications();
     await pressureCharacteristic.startNotifications();
     await humidityCharacteristic.startNotifications();
     await gasCharacteristic.startNotifications();
+    await quaternionCharacteristic.startNotifications();
     await motionRawDataCharacteristic.startNotifications();
     await eulerCharacteristic.startNotifications();
 }
@@ -104,6 +113,7 @@ async function dataRecordStop() {
     pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
     humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
     gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
+    quaternionCharacteristic.removeEventListener('characteristicvaluechanged', readDataQuaternion);
     motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataMotionRaw);
     eulerCharacteristic.removeEventListener('characteristicvaluechanged', readDataEuler);
     await temperatureCharacteristic.stopNotifications();
@@ -111,6 +121,7 @@ async function dataRecordStop() {
     await humidityCharacteristic.stopNotifications();
     await gasCharacteristic.stopNotifications();
     await motionRawDataCharacteristic.stopNotifications();
+    await quaternionCharacteristic.stopNotifications();
     await eulerCharacteristic.stopNotifications();
     setRecordedData();
     submitData();
@@ -135,6 +146,11 @@ function setRecordedData() {
     document.getElementById("CO2").value = arrGasCO2.join(";");
     document.getElementById("TVOC").value = arrGasTVOC.join(";");
     document.getElementById("GasT").value = arrGasTime.join(";");
+    document.getElementById("quatW").value = arrQuatW.join(";");
+    document.getElementById("quatX").value = arrQuatX.join(";");
+    document.getElementById("quatY").value = arrQuatY.join(";");
+    document.getElementById("quatZ").value = arrQuatZ.join(";");
+    document.getElementById("quatT").value = arrQuatTime.join(";");
     document.getElementById("accelX").value = arrAccelX.join(";");
     document.getElementById("accelY").value = arrAccelY.join(";");
     document.getElementById("accelZ").value = arrAccelZ.join(";");
@@ -183,6 +199,26 @@ function readDataGas() {
     const TVOC = value.getUint16(2, true);
     arrGasCO2.push(CO2);
     arrGasTVOC.push(TVOC);
+}
+
+function readDataQuaternion(){
+    arrQuatTime.push(Date.now());
+    const {value} =  this;
+    const quatW = value.getInt32(0, true) / (1 << 30);
+    const quatX = value.getInt32(4, true) / (1 << 30);
+    const quatY = value.getInt32(8, true) / (1 << 30);
+    const quatZ = value.getInt32(12, true) / (1 << 30);
+    const magnitude = Math.sqrt(quatW  ** 2 + quatX ** 2 + quatY ** 2 + quatZ ** 2);
+    if (magnitude !== 0){
+        quatW /= magnitude;
+        quatX /= magnitude;
+        quatY /= magnitude;
+        quatZ /= magnitude;
+    }
+    arrQuatW.push(quatW);
+    arrQuatX.push(quatX);
+    arrQuatY.push(quatY);
+    arrQuatZ.push(quatZ);
 }
 
 function readDataMotionRaw() {
