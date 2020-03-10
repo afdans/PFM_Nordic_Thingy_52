@@ -39,6 +39,8 @@ var arrPitch = [];
 var arrYaw = [];
 var arrEulerTime = [];
 
+const CSVSeparator = ";";
+
 // Address Reference
 // https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
 // Environment
@@ -83,7 +85,7 @@ async function servicesInit() {
     pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
-    quaternionCharacteristic = await motionService.get(UUID(QuaternionID));
+    quaternionCharacteristic = await motionService.getCharacteristic(UUID(QuaternionID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
     console.log(thingy.name + " services ready");
@@ -137,34 +139,34 @@ function UUID(id) {
 }
 
 function setRecordedData() {
-    document.getElementById("temp").value = arrTemp.join(";");
-    document.getElementById("tempT").value = arrTempTime.join(";");
-    document.getElementById("pressure").value = arrPressure.join(";");
-    document.getElementById("pressureT").value = arrPressureTime.join(";");
-    document.getElementById("humidity").value = arrHumidity.join(";");
-    document.getElementById("humidityT").value = arrHumidityTime.join(";");
-    document.getElementById("CO2").value = arrGasCO2.join(";");
-    document.getElementById("TVOC").value = arrGasTVOC.join(";");
-    document.getElementById("GasT").value = arrGasTime.join(";");
-    document.getElementById("quatW").value = arrQuatW.join(";");
-    document.getElementById("quatX").value = arrQuatX.join(";");
-    document.getElementById("quatY").value = arrQuatY.join(";");
-    document.getElementById("quatZ").value = arrQuatZ.join(";");
-    document.getElementById("quatT").value = arrQuatTime.join(";");
-    document.getElementById("accelX").value = arrAccelX.join(";");
-    document.getElementById("accelY").value = arrAccelY.join(";");
-    document.getElementById("accelZ").value = arrAccelZ.join(";");
-    document.getElementById("gyroX").value = arrGyroX.join(";");
-    document.getElementById("gyroY").value = arrGyroY.join(";");
-    document.getElementById("gyroZ").value = arrGyroZ.join(";");
-    document.getElementById("magX").value = arrMagX.join(";");
-    document.getElementById("magY").value = arrMagY.join(";");
-    document.getElementById("magZ").value = arrMagZ.join(";");
-    document.getElementById("motionT").value = arrMotionRawTime.join(";");
-    document.getElementById('roll').value = arrRoll.join(";");
-    document.getElementById('pitch').value = arrPitch.join(";");
-    document.getElementById('yaw').value = arrYaw.join(";");
-    document.getElementById('eulerT').value = arrEulerTime.join(";");
+    document.getElementById("temp").value = arrTemp.join(CSVSeparator);
+    document.getElementById("tempT").value = arrTempTime.join(CSVSeparator);
+    document.getElementById("pressure").value = arrPressure.join(CSVSeparator);
+    document.getElementById("pressureT").value = arrPressureTime.join(CSVSeparator);
+    document.getElementById("humidity").value = arrHumidity.join(CSVSeparator);
+    document.getElementById("humidityT").value = arrHumidityTime.join(CSVSeparator);
+    document.getElementById("CO2").value = arrGasCO2.join(CSVSeparator);
+    document.getElementById("TVOC").value = arrGasTVOC.join(CSVSeparator);
+    document.getElementById("GasT").value = arrGasTime.join(CSVSeparator);
+    document.getElementById("quatW").value = arrQuatW.join(CSVSeparator);
+    document.getElementById("quatX").value = arrQuatX.join(CSVSeparator);
+    document.getElementById("quatY").value = arrQuatY.join(CSVSeparator);
+    document.getElementById("quatZ").value = arrQuatZ.join(CSVSeparator);
+    document.getElementById("quatT").value = arrQuatTime.join(CSVSeparator);
+    document.getElementById("accelX").value = arrAccelX.join(CSVSeparator);
+    document.getElementById("accelY").value = arrAccelY.join(CSVSeparator);
+    document.getElementById("accelZ").value = arrAccelZ.join(CSVSeparator);
+    document.getElementById("gyroX").value = arrGyroX.join(CSVSeparator);
+    document.getElementById("gyroY").value = arrGyroY.join(CSVSeparator);
+    document.getElementById("gyroZ").value = arrGyroZ.join(CSVSeparator);
+    document.getElementById("magX").value = arrMagX.join(CSVSeparator);
+    document.getElementById("magY").value = arrMagY.join(CSVSeparator);
+    document.getElementById("magZ").value = arrMagZ.join(CSVSeparator);
+    document.getElementById("motionT").value = arrMotionRawTime.join(CSVSeparator);
+    document.getElementById('roll').value = arrRoll.join(CSVSeparator);
+    document.getElementById('pitch').value = arrPitch.join(CSVSeparator);
+    document.getElementById('yaw').value = arrYaw.join(CSVSeparator);
+    document.getElementById('eulerT').value = arrEulerTime.join(CSVSeparator);
 }
 
 function readDataTemp() {
@@ -204,10 +206,10 @@ function readDataGas() {
 function readDataQuaternion(){
     arrQuatTime.push(Date.now());
     const {value} =  this;
-    const quatW = value.getInt32(0, true) / (1 << 30);
-    const quatX = value.getInt32(4, true) / (1 << 30);
-    const quatY = value.getInt32(8, true) / (1 << 30);
-    const quatZ = value.getInt32(12, true) / (1 << 30);
+    var quatW = value.getInt32(0, true) / (1 << 30);
+    var quatX = value.getInt32(4, true) / (1 << 30);
+    var quatY = value.getInt32(8, true) / (1 << 30);
+    var quatZ = value.getInt32(12, true) / (1 << 30);
     const magnitude = Math.sqrt(quatW  ** 2 + quatX ** 2 + quatY ** 2 + quatZ ** 2);
     if (magnitude !== 0){
         quatW /= magnitude;
