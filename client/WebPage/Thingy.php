@@ -54,6 +54,7 @@
             <p>Color calibration Blue (intensity): <br>
                 <input type="text" id="colorCalBlue">
             </p>
+            <button onclick="saveEnvironmentConfig();">Save Environment Config!</button>
         </div>
         <div class="column">
             <h2>Motion</h2>

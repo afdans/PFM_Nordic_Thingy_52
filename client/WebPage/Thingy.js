@@ -358,6 +358,22 @@ async function writeEnvironmentConfig(formattedData) {
     console.log("Environment config write successful");
 }
 
+async function saveEnvironmentConfig(){
+    const formattedData = {
+        temperatureInterval: document.getElementById("temperatureInterval").value,
+        pressureInterval: document.getElementById("pressureInterval").value,
+        humidityInterval: document.getElementById("humidityInterval").value,
+        colorInterval: document.getElementById("colorInterval").value,
+        gasInterval: document.getElementById("gasInterval").value,
+        colorSensorCalibration: {
+            red: document.getElementById("colorCalRed").value,
+            green: document.getElementById("colorCalGreen").value,
+            blue: document.getElementById("colorCalBlue").value,
+        },
+    };
+    await writeEnvironmentConfig(formattedData);
+}
+
 /**
  * TODO:
  * Add warnings/errors when data is out of range
@@ -390,12 +406,12 @@ async function writeMotionConfig(formattedData) {
 
 }
 
-async function testConfigs() {
+/*async function testConfigs() {
     const formattedMotionData = await readMotionConfig();
     const formattedEnvironmentData = await readEnvironmentConfig();
     await writeMotionConfig(formattedMotionData);
     await writeEnvironmentConfig(formattedEnvironmentData);
-}
+}*/
 
 async function showConfigs() {
     var configs = document.getElementById("Configs");
