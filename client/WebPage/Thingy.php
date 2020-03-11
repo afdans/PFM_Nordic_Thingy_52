@@ -16,7 +16,7 @@
     <button onclick="dataRecordStart();">Start Recording Data!</button>
     <button onclick="dataRecordStop();">Stop Recording Data!</button>
     <button onclick="disconnect();">Disconnect!</button>
-    <form name="testForm" id="myTestForm" action="DataSave.php" method="post">
+    <form name="saveData" id="saveData" action="DataSave.php" method="post">
         <?php
         createTagFromArray(get_defined_constants(true)['user']);
         ?>

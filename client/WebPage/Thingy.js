@@ -50,9 +50,11 @@ const PressureID = '0202';
 const HumidityID = '0203';
 const GasID = '0204';
 const ColorID = '0205';
+const EnvironmentConfigID = '0206';
 
 // Motion
 const MotionID = '0400';
+const MotionconfigID = '0401';
 const TapID = '0402';
 const OrientationID = '0403';
 const QuaternionID = '0404';
@@ -131,7 +133,7 @@ async function dataRecordStop() {
 }
 
 function submitData() {
-    document.forms["myTestForm"].submit();
+    document.forms["saveData"].submit();
 }
 
 function UUID(id) {
