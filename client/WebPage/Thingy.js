@@ -82,7 +82,7 @@ async function connect() {
     });
     await thingy.gatt.connect();
     console.log(thingy.name + " connected");
-    servicesInit();
+    await servicesInit();
     document.getElementById("features").style.display = "block";
     document.getElementById("connectBTN").style.display = "none";
 }
