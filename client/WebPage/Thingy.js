@@ -1,6 +1,8 @@
 // Global variables
+
 // Bluetooth Device
 var thingy;
+
 // Characteristics
 var temperatureCharacteristic;
 var pressureCharacteristic;
@@ -11,6 +13,7 @@ var motionConfigCharacteristic;
 var quaternionCharacteristic;
 var motionRawDataCharacteristic;
 var eulerCharacteristic;
+
 // Data Arrays
 var arrTemp = [];
 var arrTempTime = [];
@@ -44,9 +47,10 @@ var arrEulerTime = [];
 const CSVSeparator = ";";
 const littleEndian = true;
 
-// Address Reference
-// https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
-// Environment
+/**  Address Reference
+ * https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
+ * Environment
+ */
 const EnvironmentID = '0200';
 const TemperatureID = '0201';
 const PressureID = '0202';
@@ -66,6 +70,9 @@ const MotionRawDataID = '0406';
 const EulerID = '0407';
 const HeadingID = '0409';
 
+/**
+ * Connects the thingy and gets characteristics
+ */
 async function connect() {
     thingy = await navigator.bluetooth.requestDevice({
         filters: [{
@@ -78,11 +85,17 @@ async function connect() {
     servicesInit();
 }
 
+/**
+ * Disconnects the thingy
+ */
 function disconnect() {
     thingy.gatt.disconnect();
     console.log("Device disconnected");
 }
 
+/**
+ * Initializes the different services and characteristics
+ */
 async function servicesInit() {
     const environmentService = await thingy.gatt.getPrimaryService(UUID(EnvironmentID));
     const motionService = await thingy.gatt.getPrimaryService(UUID(MotionID));
@@ -98,6 +111,9 @@ async function servicesInit() {
     console.log(thingy.name + " services ready");
 }
 
+/**
+ * Starts recording data from the different sensors
+ */
 async function dataRecordStart() {
     console.log("Data recording started");
     temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
@@ -116,6 +132,9 @@ async function dataRecordStart() {
     await eulerCharacteristic.startNotifications();
 }
 
+/**
+ * Stops recording data from the different sensors
+ */
 async function dataRecordStop() {
     console.log("Data recording stopped");
     temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
@@ -137,14 +156,26 @@ async function dataRecordStop() {
     console.log("Data saved in file");
 }
 
+/**
+ * Submit form in order to be able to save it as a CSV  with PHP  
+ */
 function submitData() {
     document.forms["saveData"].submit();
 }
 
+/**
+ * Creates the UUID from 4 char id
+ * @param {string} id 
+ */
 function UUID(id) {
     return 'ef68' + id + '-9b35-4933-9b10-52ffa9740042';
 }
 
+/**
+ * Writes the recorded data from the sensors into hidden html elements
+ * that will be passed in the form to the PHP script that saves the data
+ * to a CSV file
+ */
 function setRecordedData() {
     document.getElementById("temp").value = arrTemp.join(CSVSeparator);
     document.getElementById("tempT").value = arrTempTime.join(CSVSeparator);
@@ -176,6 +207,9 @@ function setRecordedData() {
     document.getElementById('eulerT').value = arrEulerTime.join(CSVSeparator);
 }
 
+/**
+ * Reads and saves data from the temperature sensor
+ */
 function readDataTemp() {
     arrTempTime.push(Date.now());
     const { value } = this;
@@ -185,6 +219,9 @@ function readDataTemp() {
     arrTemp.push(temperature);
 }
 
+/**
+ * Reads and saves data from the pressure sensor
+ */
 function readDataPressure() {
     arrPressureTime.push(Date.now());
     const { value } = this;
@@ -194,6 +231,9 @@ function readDataPressure() {
     arrPressure.push(pressure);
 }
 
+/**
+ * Reads and saves data from the humidity sensor
+ */
 function readDataHumidity() {
     arrHumidityTime.push(Date.now());
     const { value } = this;
@@ -201,6 +241,9 @@ function readDataHumidity() {
     arrHumidity.push(RH);
 }
 
+/**
+ * Reads and saces data from the gas sensor
+ */
 function readDataGas() {
     arrGasTime.push(Date.now());
     const { value } = this;
@@ -210,6 +253,9 @@ function readDataGas() {
     arrGasTVOC.push(TVOC);
 }
 
+/**
+ * Reads and saves data from the Quaternion
+ */
 function readDataQuaternion() {
     arrQuatTime.push(Date.now());
     const { value } = this;
@@ -230,6 +276,10 @@ function readDataQuaternion() {
     arrQuatZ.push(quatZ);
 }
 
+/**
+ * Reads and saves raw motion data
+ * aka, acceleration, gyroscope and magnetometer
+ */
 function readDataMotionRaw() {
     arrMotionRawTime.push(Date.now());
     const { value } = this;
@@ -256,6 +306,9 @@ function readDataMotionRaw() {
     arrMagZ.push(magZ);
 }
 
+/**
+ * Reads and saves roll, pitch and yaw
+ */
 function readDataEuler() {
     arrEulerTime.push(Date.now());
     const { value } = this;
@@ -267,6 +320,9 @@ function readDataEuler() {
     arrYaw.push(yaw);
 }
 
+/**
+ * Reads environment configuration values
+ */
 async function readEnvironmentConfig() {
     const value = await environmentConfigCharacteristic.readValue();
     const temperatureInterval = value.getUint16(0, littleEndian);
@@ -289,11 +345,13 @@ async function readEnvironmentConfig() {
             blue: colorBlue,
         },
     };
-    console.log("Environment config read successful");
     displayEnvironmentConfig(formattedData);
     return formattedData;
 }
 
+/**
+ * Reads motion configuration values
+ */
 async function readMotionConfig() {
     const value = await motionConfigCharacteristic.readValue();
     const stepCountInterval = value.getUint16(0, littleEndian);
@@ -348,37 +406,10 @@ async function writeEnvironmentConfig(formattedData) {
     dataArray[10] = green;
     dataArray[11] = blue;
     await environmentConfigCharacteristic.writeValue(dataArray);
-    console.log("Environment config write successful");
-}
-
-async function saveEnvironmentConfig() {
-    const formattedData = {
-        temperatureInterval: document.getElementById("temperatureInterval").value,
-        pressureInterval: document.getElementById("pressureInterval").value,
-        humidityInterval: document.getElementById("humidityInterval").value,
-        colorInterval: document.getElementById("colorInterval").value,
-        gasInterval: document.getElementById("gasInterval").value,
-        colorSensorCalibration: {
-            red: document.getElementById("colorCalRed").value,
-            green: document.getElementById("colorCalGreen").value,
-            blue: document.getElementById("colorCalBlue").value,
-        },
-    };
-    await writeEnvironmentConfig(formattedData);
-}
-
-async function saveMotionConfig() {
-    const formattedData = {
-        stepCountInterval: document.getElementById("pedometerInterval").value,
-        tempCompensationInterval: document.getElementById("tempCompensationInterval").value,
-        magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
-        motionProcessFrequency: document.getElementById("motionFrequency").value,
-        wakeOnMotion: document.getElementById("wakeOnMotion").value,
-    };
-    await writeMotionConfig(formattedData);
 }
 
 /**
+ * Writes new motion configuration to the thingy
  * TODO:
  * Add warnings/errors when data is out of range
  * step count 100 - 5e3 ms
@@ -410,6 +441,42 @@ async function writeMotionConfig(formattedData) {
 
 }
 
+/**
+ * Gets environment config from the UI
+ */
+async function saveEnvironmentConfig() {
+    const formattedData = {
+        temperatureInterval: document.getElementById("temperatureInterval").value,
+        pressureInterval: document.getElementById("pressureInterval").value,
+        humidityInterval: document.getElementById("humidityInterval").value,
+        colorInterval: document.getElementById("colorInterval").value,
+        gasInterval: document.getElementById("gasInterval").value,
+        colorSensorCalibration: {
+            red: document.getElementById("colorCalRed").value,
+            green: document.getElementById("colorCalGreen").value,
+            blue: document.getElementById("colorCalBlue").value,
+        },
+    };
+    await writeEnvironmentConfig(formattedData);
+}
+
+/**
+ * Gets motion config from the UI
+ */
+async function saveMotionConfig() {
+    const formattedData = {
+        stepCountInterval: document.getElementById("pedometerInterval").value,
+        tempCompensationInterval: document.getElementById("tempCompensationInterval").value,
+        magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
+        motionProcessFrequency: document.getElementById("motionFrequency").value,
+        wakeOnMotion: document.getElementById("wakeOnMotion").value,
+    };
+    await writeMotionConfig(formattedData);
+}
+
+/**
+ * Toggles configuration visibility in the UI 
+ */
 async function showConfigs() {
     var configs = document.getElementById("Configs");
     if (configs.style.display === "none") {
@@ -423,6 +490,11 @@ async function showConfigs() {
     }
 }
 
+/**
+ * Displays current environment config in the UI
+ * 
+ * @param {object} formattedData 
+ */
 function displayEnvironmentConfig(formattedData) {
     document.getElementById("temperatureInterval").value = formattedData.temperatureInterval;
     document.getElementById("pressureInterval").value = formattedData.pressureInterval;
@@ -434,6 +506,11 @@ function displayEnvironmentConfig(formattedData) {
     document.getElementById("colorCalBlue").value = formattedData.colorSensorCalibration.blue;
 }
 
+/**
+ * Displays current motion config in the UI
+ * 
+ * @param {object} formattedData 
+ */
 function displayMotionConfig(formattedData) {
     document.getElementById("pedometerInterval").value = formattedData.stepCountInterval;
     document.getElementById("motionFrequency").value = formattedData.motionProcessFrequency;
