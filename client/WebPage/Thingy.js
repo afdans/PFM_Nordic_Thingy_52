@@ -473,7 +473,7 @@ async function saveMotionConfig() {
         tempCompensationInterval: document.getElementById("tempCompensationInterval").value,
         magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
         motionProcessFrequency: document.getElementById("motionFrequency").value,
-        wakeOnMotion: document.getElementById("wakeOnMotion").value,
+        wakeOnMotion: document.getElementById("wakeOnMotion").checked,
     };
     await writeMotionConfig(formattedData);
 }
@@ -490,7 +490,7 @@ async function showConfigs() {
         document.getElementById("configurationsBTN").innerHTML = "Hide Configurations";
     } else {
         configs.style.display = "none";
-        document.getElementById("ConfigBTN").innerHTML = "Show Configurations";
+        document.getElementById("configurationsBTN").innerHTML = "Show Configurations";
     }
 }
 
