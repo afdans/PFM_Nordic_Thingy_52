@@ -76,6 +76,7 @@
                     <span class="slider round"></span>
                 </label>
             </p>
+            <button onclick="saveMotionConfig();">Save Motion Config!</button>
         </div>
     </div>
     <script src="Thingy.js"></script>

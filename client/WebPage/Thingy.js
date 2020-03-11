@@ -277,13 +277,6 @@ async function readEnvironmentConfig() {
     const colorRed = value.getUint8(9);
     const colorGreen = value.getUint8(10);
     const colorBlue = value.getUint8(11);
-    /*if (gasInterval === 1) {
-        gasInterval = 1;
-    } else if (gasInterval === 2) {
-        gasInterval = 10;
-    } else if (gasInterval === 3) {
-        gasInterval = 60;
-    }*/
     const formattedData = {
         temperatureInterval: temperatureInterval,
         pressureInterval: pressureInterval,
@@ -358,7 +351,7 @@ async function writeEnvironmentConfig(formattedData) {
     console.log("Environment config write successful");
 }
 
-async function saveEnvironmentConfig(){
+async function saveEnvironmentConfig() {
     const formattedData = {
         temperatureInterval: document.getElementById("temperatureInterval").value,
         pressureInterval: document.getElementById("pressureInterval").value,
@@ -372,6 +365,17 @@ async function saveEnvironmentConfig(){
         },
     };
     await writeEnvironmentConfig(formattedData);
+}
+
+async function saveMotionConfig() {
+    const formattedData = {
+        stepCountInterval: document.getElementById("pedometerInterval").value,
+        tempCompensationInterval: document.getElementById("tempCompensationInterval").value,
+        magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
+        motionProcessFrequency: document.getElementById("motionFrequency").value,
+        wakeOnMotion: document.getElementById("wakeOnMotion").value,
+    };
+    await writeMotionConfig(formattedData);
 }
 
 /**
@@ -405,13 +409,6 @@ async function writeMotionConfig(formattedData) {
     console.log("Motion config write successful");
 
 }
-
-/*async function testConfigs() {
-    const formattedMotionData = await readMotionConfig();
-    const formattedEnvironmentData = await readEnvironmentConfig();
-    await writeMotionConfig(formattedMotionData);
-    await writeEnvironmentConfig(formattedEnvironmentData);
-}*/
 
 async function showConfigs() {
     var configs = document.getElementById("Configs");
