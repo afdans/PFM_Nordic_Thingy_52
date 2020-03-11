@@ -21,6 +21,7 @@
         createTagFromArray(get_defined_constants(true)['user']);
         ?>
     </form>
+    <button onclick="testConfigs();">Test Configuration!!</button>
     <script src="Thingy.js"></script>
 </body>
 

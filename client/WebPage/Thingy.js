@@ -40,6 +40,7 @@ var arrYaw = [];
 var arrEulerTime = [];
 
 const CSVSeparator = ";";
+const littleEndian = true;
 
 // Address Reference
 // https://nordicsemiconductor.github.io/Nordic-Thingy52-FW/documentation/firmware_architecture.html
@@ -54,7 +55,7 @@ const EnvironmentConfigID = '0206';
 
 // Motion
 const MotionID = '0400';
-const MotionconfigID = '0401';
+const MotionConfigID = '0401';
 const TapID = '0402';
 const OrientationID = '0403';
 const QuaternionID = '0404';
@@ -87,6 +88,8 @@ async function servicesInit() {
     pressureCharacteristic = await environmentService.getCharacteristic(UUID(PressureID));
     humidityCharacteristic = await environmentService.getCharacteristic(UUID(HumidityID));
     gasCharacteristic = await environmentService.getCharacteristic(UUID(GasID));
+    environmentConfigCharacteristic = await environmentService.getCharacteristic(UUID(EnvironmentConfigID));
+    motionConfigCharacteristic = await motionService.getCharacteristic(UUID(MotionConfigID));
     quaternionCharacteristic = await motionService.getCharacteristic(UUID(QuaternionID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
@@ -174,8 +177,8 @@ function setRecordedData() {
 function readDataTemp() {
     arrTempTime.push(Date.now());
     const { value } = this;
-    const integer = value.getInt8(0, true);
-    const decimal = value.getUint8(1, true);
+    const integer = value.getInt8(0, littleEndian);
+    const decimal = value.getUint8(1, littleEndian);
     const temperature = integer + decimal / 100;
     arrTemp.push(temperature);
 }
@@ -183,8 +186,8 @@ function readDataTemp() {
 function readDataPressure() {
     arrPressureTime.push(Date.now());
     const { value } = this;
-    const integer = value.getInt32(0, true);
-    const decimal = value.getUint8(1, true);
+    const integer = value.getInt32(0, littleEndian);
+    const decimal = value.getUint8(1, littleEndian);
     const pressure = integer + decimal / 100;
     arrPressure.push(pressure);
 }
@@ -192,28 +195,28 @@ function readDataPressure() {
 function readDataHumidity() {
     arrHumidityTime.push(Date.now());
     const { value } = this;
-    const RH = value.getUint8(0, true);
+    const RH = value.getUint8(0, littleEndian);
     arrHumidity.push(RH);
 }
 
 function readDataGas() {
     arrGasTime.push(Date.now());
     const { value } = this;
-    const CO2 = value.getUint16(0, true);
-    const TVOC = value.getUint16(2, true);
+    const CO2 = value.getUint16(0, littleEndian);
+    const TVOC = value.getUint16(2, littleEndian);
     arrGasCO2.push(CO2);
     arrGasTVOC.push(TVOC);
 }
 
-function readDataQuaternion(){
+function readDataQuaternion() {
     arrQuatTime.push(Date.now());
-    const {value} =  this;
-    var quatW = value.getInt32(0, true) / (1 << 30);
-    var quatX = value.getInt32(4, true) / (1 << 30);
-    var quatY = value.getInt32(8, true) / (1 << 30);
-    var quatZ = value.getInt32(12, true) / (1 << 30);
-    const magnitude = Math.sqrt(quatW  ** 2 + quatX ** 2 + quatY ** 2 + quatZ ** 2);
-    if (magnitude !== 0){
+    const { value } = this;
+    var quatW = value.getInt32(0, littleEndian) / (1 << 30);
+    var quatX = value.getInt32(4, littleEndian) / (1 << 30);
+    var quatY = value.getInt32(8, littleEndian) / (1 << 30);
+    var quatZ = value.getInt32(12, littleEndian) / (1 << 30);
+    const magnitude = Math.sqrt(quatW ** 2 + quatX ** 2 + quatY ** 2 + quatZ ** 2);
+    if (magnitude !== 0) {
         quatW /= magnitude;
         quatX /= magnitude;
         quatY /= magnitude;
@@ -229,17 +232,17 @@ function readDataMotionRaw() {
     arrMotionRawTime.push(Date.now());
     const { value } = this;
     // Acceleration
-    const accelX = value.getInt16(0, true) / 1024;
-    const accelY = value.getInt16(2, true) / 1024;
-    const accelZ = value.getInt16(4, true) / 1024;
+    const accelX = value.getInt16(0, littleEndian) / 1024;
+    const accelY = value.getInt16(2, littleEndian) / 1024;
+    const accelZ = value.getInt16(4, littleEndian) / 1024;
     // Gyroscope
-    const gyroX = value.getInt16(6, true) / 2048;
-    const gyroY = value.getInt16(8, true) / 2048;
-    const gyroZ = value.getInt16(10, true) / 2048;
+    const gyroX = value.getInt16(6, littleEndian) / 2048;
+    const gyroY = value.getInt16(8, littleEndian) / 2048;
+    const gyroZ = value.getInt16(10, littleEndian) / 2048;
     // Magnetometer
-    const magX = value.getInt16(12, true) / 4096;
-    const magY = value.getInt16(14, true) / 4096;
-    const magZ = value.getInt16(16, true) / 4096;
+    const magX = value.getInt16(12, littleEndian) / 4096;
+    const magY = value.getInt16(14, littleEndian) / 4096;
+    const magZ = value.getInt16(16, littleEndian) / 4096;
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
@@ -254,10 +257,64 @@ function readDataMotionRaw() {
 function readDataEuler() {
     arrEulerTime.push(Date.now());
     const { value } = this;
-    const roll = value.getInt32(0, true) / 65536;
-    const pitch = value.getInt32(4, true) / 65536;
-    const yaw = value.getInt32(8, true) / 65536;
+    const roll = value.getInt32(0, littleEndian) / 65536;
+    const pitch = value.getInt32(4, littleEndian) / 65536;
+    const yaw = value.getInt32(8, littleEndian) / 65536;
     arrRoll.push(roll);
     arrPitch.push(pitch);
     arrYaw.push(yaw);
+}
+
+async function readMotionConfig() {
+    const value = await motionConfigCharacteristic.readValue();
+    const stepCountInterval = value.getUint16(0, littleEndian);
+    const tempCompensationInterval = value.getUint16(2, littleEndian);
+    const magnetCompensationInterval = value.getUint16(4, littleEndian);
+    const motionProcessFrequency = value.getUint16(6, littleEndian);
+    const wakeOnMotion = value.getUint8(8);
+    const formattedData = {
+        stepCountInterval: stepCountInterval,
+        tempCompensationInterval: tempCompensationInterval,
+        magnetCompensationInterval: magnetCompensationInterval,
+        motionProcessFrequency: motionProcessFrequency,
+        wakeOnMotion: wakeOnMotion,
+    };
+    console.log("Motion config read successful");
+    return formattedData;
+}
+
+/**
+ * TODO:
+ * Add warnings/errors when data is out of range
+ * step count 100-5000 ms
+ * temp compenstation 100-5000 ms
+ * magnet compenstation 100-1000 ms
+ * motion frequency 5-200 Hz
+ * wake on motion boolean
+ * @param {object} formattedData - The configuration values to be sent to the device 
+ */
+async function writeMotionConfig(formattedData) {
+    const stepCountInterval = formattedData.stepCountInterval;
+    const tempCompensationInterval = formattedData.tempCompensationInterval;
+    const magnetCompensationInterval = formattedData.magnetCompensationInterval;
+    const motionProcessFrequency = formattedData.motionProcessFrequency;
+    const wakeOnMotion = formattedData.wakeOnMotion;
+    var dataArray = new Uint8Array(9);
+    dataArray[0] = stepCountInterval & 0xFF;
+    dataArray[1] = (stepCountInterval >> 8) & 0xFF;
+    dataArray[2] = tempCompensationInterval & 0xFF;
+    dataArray[3] = (tempCompensationInterval >> 8) & 0xFF;
+    dataArray[4] = magnetCompensationInterval & 0xFF;
+    dataArray[5] = (magnetCompensationInterval >> 8) & 0xFF;
+    dataArray[6] = motionProcessFrequency & 0xFF;
+    dataArray[7] = (motionProcessFrequency >> 8) & 0xFF;
+    dataArray[8] = wakeOnMotion & 0xFF;
+    await motionConfigCharacteristic.writeValue(dataArray);
+    console.log("Motion config write successful");
+
+}
+
+async function testConfigs() {
+    const formattedData = await readMotionConfig();
+    await writeMotionConfig(formattedData);
 }
