@@ -96,6 +96,7 @@ async function servicesInit() {
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
     console.log(thingy.name + " services ready");
+    await readEnvironmentConfig();
 }
 
 async function dataRecordStart() {
@@ -297,6 +298,7 @@ async function readEnvironmentConfig() {
         },
     };
     console.log("Environment config read successful");
+    displayEnvironmentConfig(formattedData);
     return formattedData;
 }
 
@@ -393,4 +395,26 @@ async function testConfigs() {
     const formattedEnvironmentData = await readEnvironmentConfig();
     await writeMotionConfig(formattedMotionData);
     await writeEnvironmentConfig(formattedEnvironmentData);
+}
+
+function showConfigs(){
+    var configs = document.getElementById("Configs");
+    if (configs.style.display === "none"){
+        configs.style.display = "block";
+        document.getElementById("ConfigBTN").innerHTML = "Hide Configurations";
+    } else {
+        configs.style.display = "none";
+        document.getElementById("ConfigBTN").innerHTML = "Show Configurations";
+    }
+}
+
+function displayEnvironmentConfig(formattedData){
+    document.getElementById("temperatureInterval").value = formattedData.temperatureInterval;
+    document.getElementById("pressureInterval").value = formattedData.pressureInterval;
+    document.getElementById("humidityInterval").value = formattedData.humidityInterval;
+    document.getElementById("colorInterval").value = formattedData.colorInterval;
+    document.getElementById("gasInterval").value = formattedData.gasInterval;
+    document.getElementById("colorCalRed").value = formattedData.colorSensorCalibration.red;
+    document.getElementById("colorCalGreen").value = formattedData.colorSensorCalibration.green;
+    document.getElementById("colorCalBlue").value = formattedData.colorSensorCalibration.blue;
 }

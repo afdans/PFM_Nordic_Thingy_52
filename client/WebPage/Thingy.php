@@ -21,7 +21,38 @@
         createTagFromArray(get_defined_constants(true)['user']);
         ?>
     </form>
-    <button onclick="testConfigs();">Test Configuration!!</button>
+    <button onclick="showConfigs();" id="ConfigBTN">Show Configurations</button>
+    <div id="Configs" style="display:none">
+        <h2>Environment</h2>
+        <p>Temperature: (100 - 60,000 ms)<br>
+            <input type="text" id="temperatureInterval">
+        </p>
+        <p>Pressure: (100 - 60,000 ms)<br>
+            <input type="text" id="pressureInterval">
+        </p>
+        <p>Humidity: (100 - 60,000 ms)<br>
+            <input type="text" id="humidityInterval">
+        </p>
+        <p>Gas:
+            <select id="gasInterval">
+                <option value="1">1 second</option>
+                <option value="2">10 seconds</option>
+                <option value="3">60 seconds</option>
+            </select>
+        </p>
+        <p>Light: (100 - 60,000 ms)<br>
+            <input type="text" id="colorInterval">
+        </p>
+        <p>Color calibration Red (intensity): <br>
+            <input type="text" id="colorCalRed">
+        </p>
+        <p>Color calibration Green (intensity): <br>
+            <input type="text" id="colorCalGreen">
+        </p>
+        <p>Color calibration Blue (intensity): <br>
+            <input type="text" id="colorCalBlue">
+        </p>
+    </div>
     <script src="Thingy.js"></script>
 </body>
 
