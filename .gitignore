@@ -31,6 +31,9 @@
 *.pdf
 *.aux
 
+# ignore data files
+*.csv
+
 # -------------------------
 # BEGIN Whitelisted Files
 # -------------------------
