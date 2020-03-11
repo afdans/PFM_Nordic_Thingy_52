@@ -83,6 +83,8 @@ async function connect() {
     await thingy.gatt.connect();
     console.log(thingy.name + " connected");
     servicesInit();
+    document.getElementById("features").style.display = "block";
+    document.getElementById("connectBTN").style.display = "none";
 }
 
 /**
@@ -91,6 +93,8 @@ async function connect() {
 function disconnect() {
     thingy.gatt.disconnect();
     console.log("Device disconnected");
+    document.getElementById("features").style.display = "none";
+    document.getElementById("connectBTN").style.display = "block";
 }
 
 /**
@@ -478,12 +482,12 @@ async function saveMotionConfig() {
  * Toggles configuration visibility in the UI 
  */
 async function showConfigs() {
-    var configs = document.getElementById("Configs");
+    var configs = document.getElementById("configurations");
     if (configs.style.display === "none") {
         await readMotionConfig();
         await readEnvironmentConfig();
         configs.style.display = "block";
-        document.getElementById("ConfigBTN").innerHTML = "Hide Configurations";
+        document.getElementById("configurationsBTN").innerHTML = "Hide Configurations";
     } else {
         configs.style.display = "none";
         document.getElementById("ConfigBTN").innerHTML = "Show Configurations";
