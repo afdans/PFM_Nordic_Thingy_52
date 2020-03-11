@@ -6,6 +6,8 @@ var temperatureCharacteristic;
 var pressureCharacteristic;
 var humidityCharacteristic;
 var gasCharacteristic;
+var environmentConfigCharacteristic;
+var motionConfigCharacteristic;
 var quaternionCharacteristic;
 var motionRawDataCharacteristic;
 var eulerCharacteristic;
@@ -265,6 +267,39 @@ function readDataEuler() {
     arrYaw.push(yaw);
 }
 
+async function readEnvironmentConfig() {
+    const value = await environmentConfigCharacteristic.readValue();
+    const temperatureInterval = value.getUint16(0, littleEndian);
+    const pressureInterval = value.getUint16(2, littleEndian);
+    const humidityInterval = value.getUint16(4, littleEndian);
+    const colorInterval = value.getUint16(6, littleEndian);
+    var gasInterval = value.getUint8(8);
+    const colorRed = value.getUint8(9);
+    const colorGreen = value.getUint8(10);
+    const colorBlue = value.getUint8(11);
+    /*if (gasInterval === 1) {
+        gasInterval = 1;
+    } else if (gasInterval === 2) {
+        gasInterval = 10;
+    } else if (gasInterval === 3) {
+        gasInterval = 60;
+    }*/
+    const formattedData = {
+        temperatureInterval: temperatureInterval,
+        pressureInterval: pressureInterval,
+        humidityInterval: humidityInterval,
+        colorInterval: colorInterval,
+        gasInterval: gasInterval,
+        colorSensorCalibration: {
+            red: colorRed,
+            green: colorGreen,
+            blue: colorBlue,
+        },
+    };
+    console.log("Environment config read successful");
+    return formattedData;
+}
+
 async function readMotionConfig() {
     const value = await motionConfigCharacteristic.readValue();
     const stepCountInterval = value.getUint16(0, littleEndian);
@@ -286,11 +321,50 @@ async function readMotionConfig() {
 /**
  * TODO:
  * Add warnings/errors when data is out of range
- * step count 100-5000 ms
- * temp compenstation 100-5000 ms
- * magnet compenstation 100-1000 ms
+ * temperature 100 - 6e4 ms
+ * pressure 100 - 6e4 ms
+ * humidity 100 - 6e4 ms
+ * color 200 - 6e4 ms
+ * gas 1, 10 or 60 seconds
+ * 
+ * @param {object} formattedData - The configuration values to be sent to the device 
+ */
+async function writeEnvironmentConfig(formattedData) {
+    const temperatureInterval = formattedData.temperatureInterval;
+    const pressureInterval = formattedData.pressureInterval;
+    const humidityInterval = formattedData.humidityInterval;
+    const colorInterval = formattedData.colorInterval;
+    const gasInterval = formattedData.gasInterval;
+    const colorSensorCalibration = formattedData.colorSensorCalibration;
+    const red = colorSensorCalibration.red;
+    const green = colorSensorCalibration.green;
+    const blue = colorSensorCalibration.blue;
+    var dataArray = new Uint8Array(12);
+    dataArray[0] = temperatureInterval & 0xFF;
+    dataArray[1] = (temperatureInterval >> 8) & 0xFF;
+    dataArray[2] = pressureInterval & 0xFF;
+    dataArray[3] = (pressureInterval >> 8)  & 0xFF;
+    dataArray[4] = humidityInterval & 0xFF;
+    dataArray[5] = (humidityInterval >> 8) & 0xFF;
+    dataArray[6] = colorInterval & 0xFF;
+    dataArray[7] = (colorInterval >> 8) & 0xFF;
+    dataArray[8] = gasInterval;
+    dataArray[9] = red;
+    dataArray[10] = green;
+    dataArray[11] = blue;
+    await environmentConfigCharacteristic.writeValue(dataArray);
+    console.log("Environment config write successful");
+}
+
+/**
+ * TODO:
+ * Add warnings/errors when data is out of range
+ * step count 100 - 5e3 ms
+ * temp compenstation 100 - 5e3 ms
+ * magnet compenstation 100 - 1e3 ms
  * motion frequency 5-200 Hz
  * wake on motion boolean
+ * 
  * @param {object} formattedData - The configuration values to be sent to the device 
  */
 async function writeMotionConfig(formattedData) {
@@ -308,13 +382,15 @@ async function writeMotionConfig(formattedData) {
     dataArray[5] = (magnetCompensationInterval >> 8) & 0xFF;
     dataArray[6] = motionProcessFrequency & 0xFF;
     dataArray[7] = (motionProcessFrequency >> 8) & 0xFF;
-    dataArray[8] = wakeOnMotion & 0xFF;
+    dataArray[8] = wakeOnMotion;
     await motionConfigCharacteristic.writeValue(dataArray);
     console.log("Motion config write successful");
 
 }
 
 async function testConfigs() {
-    const formattedData = await readMotionConfig();
-    await writeMotionConfig(formattedData);
+    const formattedMotionData = await readMotionConfig();
+    const formattedEnvironmentData = await readEnvironmentConfig();
+    await writeMotionConfig(formattedMotionData);
+    await writeEnvironmentConfig(formattedEnvironmentData);
 }
