@@ -57,6 +57,24 @@
         </div>
         <div class="column">
             <h2>Motion</h2>
+            <p>Pedometer: (100 - 5,000 ms)<br>
+                <input type="text" id="pedometerInterval">
+            </p>
+            <p>Motion Frequency: (5 - 200 Hz)<br>
+                <input type="text" id="motionFrequency">
+            </p>
+            <p>Temp Compensation: (100 - 5,000 ms)<br>
+                <input type="text" id="tempCompensationInterval">
+            </p>
+            <p>Magnet Compensation: (100 - 5,000 ms)<br>
+                <input type="text" id="magnetCompensationInterval">
+            </p>
+            <p>Wake On Motion: <br>
+                <label class="switch">
+                    <input type="checkbox" id="wakeOnMotion">
+                    <span class="slider round"></span>
+                </label>
+            </p>
         </div>
     </div>
     <script src="Thingy.js"></script>

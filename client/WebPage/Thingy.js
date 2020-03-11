@@ -96,7 +96,6 @@ async function servicesInit() {
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
     console.log(thingy.name + " services ready");
-    await readEnvironmentConfig();
 }
 
 async function dataRecordStart() {
@@ -317,6 +316,7 @@ async function readMotionConfig() {
         wakeOnMotion: wakeOnMotion,
     };
     console.log("Motion config read successful");
+    displayMotionConfig(formattedData);
     return formattedData;
 }
 
@@ -345,7 +345,7 @@ async function writeEnvironmentConfig(formattedData) {
     dataArray[0] = temperatureInterval & 0xFF;
     dataArray[1] = (temperatureInterval >> 8) & 0xFF;
     dataArray[2] = pressureInterval & 0xFF;
-    dataArray[3] = (pressureInterval >> 8)  & 0xFF;
+    dataArray[3] = (pressureInterval >> 8) & 0xFF;
     dataArray[4] = humidityInterval & 0xFF;
     dataArray[5] = (humidityInterval >> 8) & 0xFF;
     dataArray[6] = colorInterval & 0xFF;
@@ -397,9 +397,11 @@ async function testConfigs() {
     await writeEnvironmentConfig(formattedEnvironmentData);
 }
 
-function showConfigs(){
+async function showConfigs() {
     var configs = document.getElementById("Configs");
-    if (configs.style.display === "none"){
+    if (configs.style.display === "none") {
+        await readMotionConfig();
+        await readEnvironmentConfig();
         configs.style.display = "block";
         document.getElementById("ConfigBTN").innerHTML = "Hide Configurations";
     } else {
@@ -408,7 +410,7 @@ function showConfigs(){
     }
 }
 
-function displayEnvironmentConfig(formattedData){
+function displayEnvironmentConfig(formattedData) {
     document.getElementById("temperatureInterval").value = formattedData.temperatureInterval;
     document.getElementById("pressureInterval").value = formattedData.pressureInterval;
     document.getElementById("humidityInterval").value = formattedData.humidityInterval;
@@ -417,4 +419,12 @@ function displayEnvironmentConfig(formattedData){
     document.getElementById("colorCalRed").value = formattedData.colorSensorCalibration.red;
     document.getElementById("colorCalGreen").value = formattedData.colorSensorCalibration.green;
     document.getElementById("colorCalBlue").value = formattedData.colorSensorCalibration.blue;
+}
+
+function displayMotionConfig(formattedData) {
+    document.getElementById("pedometerInterval").value = formattedData.stepCountInterval;
+    document.getElementById("motionFrequency").value = formattedData.motionProcessFrequency;
+    document.getElementById("tempCompensationInterval").value = formattedData.tempCompensationInterval;
+    document.getElementById("magnetCompensationInterval").value = formattedData.magnetCompensationInterval;
+    document.getElementById("wakeOnMotion").checked = formattedData.wakeOnMotion;
 }
