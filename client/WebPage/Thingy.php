@@ -14,17 +14,15 @@
 <body>
     <h1>Hello Griffith</h1>
     <button onclick="connect();" id="connectBTN">Connect!</button>
-    <div id="features" style="display:none">
-    <button onclick="disconnect();">Disconnect!</button>
+    <div id="features" style="display:block">
+        <button onclick="disconnect();">Disconnect!</button>
         <button onclick="dataRecordStart();">Start Recording Data!</button>
         <button onclick="dataRecordStop();">Stop Recording Data!</button>
         <form name="saveData" id="saveData" action="DataSave.php" method="post">
-            <?php
-            createTagFromArray(get_defined_constants(true)['user']);
-            ?>
+            <?php createTagFromArray(get_defined_constants(true)['user']); ?>
         </form>
         <button onclick="showConfigs();" id="configurationsBTN">Show Configurations</button>
-        <div id="configurations" style="display:none" class="row">
+        <div id="configurations" style="display:block" class="row">
             <div class="column">
                 <h2>Environment</h2>
                 <p>Temperature: (100 - 60,000 ms)<br>
@@ -36,7 +34,7 @@
                 <p>Humidity: (100 - 60,000 ms)<br>
                     <input type="text" id="humidityInterval">
                 </p>
-                <p>Gas:
+                <p>Gas:<br>
                     <select id="gasInterval">
                         <option value="1">1 second</option>
                         <option value="2">10 seconds</option>
@@ -72,12 +70,20 @@
                     <input type="text" id="magnetCompensationInterval">
                 </p>
                 <p>Wake On Motion: <br>
-                    <label class="switch">
-                        <input type="checkbox" id="wakeOnMotion">
-                        <span class="slider round"></span>
-                    </label>
+                    <?php createToggleSwitch("wakeOnMotion"); ?>
                 </p>
                 <button onclick="saveMotionConfig();">Save Motion Config!</button>
+            </div>
+            <div class="column">
+                <h2>Data Recording</h2>
+                Temperature: <?php createToggleSwitch("readTemperature"); ?>
+                Pressure: <?php createToggleSwitch("readPressure"); ?>
+                Humidity: <?php createToggleSwitch("readHumidity"); ?>
+                Gas: <?php createToggleSwitch("readGas"); ?>
+                Light: <?php createToggleSwitch("readLight"); ?>
+                Euler: <?php createToggleSwitch("readEuler"); ?>
+                Quaternion: <?php createToggleSwitch("readQuaternion"); ?>
+                Raw: <?php createToggleSwitch("readRawMotion"); ?>
             </div>
         </div>
     </div>
