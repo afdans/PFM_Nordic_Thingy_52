@@ -44,6 +44,16 @@ var arrPitch = [];
 var arrYaw = [];
 var arrEulerTime = [];
 
+// Which sensors
+var readTemperature;
+var readPressure;
+var readHumidity;
+var readGas;
+var readLight;
+var readEuler;
+var readQuaternion;
+var readRawMotion;
+
 const CSVSeparator = ";";
 const littleEndian = true;
 
@@ -120,20 +130,35 @@ async function servicesInit() {
  */
 async function dataRecordStart() {
     console.log("Data recording started");
-    temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
-    pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
-    humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
-    gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
-    quaternionCharacteristic.addEventListener('characteristicvaluechanged', readDataQuaternion);
-    motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataMotionRaw);
-    eulerCharacteristic.addEventListener('characteristicvaluechanged', readDataEuler);
-    await temperatureCharacteristic.startNotifications();
-    await pressureCharacteristic.startNotifications();
-    await humidityCharacteristic.startNotifications();
-    await gasCharacteristic.startNotifications();
-    await quaternionCharacteristic.startNotifications();
-    await motionRawDataCharacteristic.startNotifications();
-    await eulerCharacteristic.startNotifications();
+    getDesiredSensors();
+    if (readTemperature) {
+        temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
+        await temperatureCharacteristic.startNotifications();
+    }
+    if (readPressure) {
+        pressureCharacteristic.addEventListener('characteristicvaluechanged', readDataPressure);
+        await pressureCharacteristic.startNotifications();
+    }
+    if (readHumidity) {
+        humidityCharacteristic.addEventListener('characteristicvaluechanged', readDataHumidity);
+        await humidityCharacteristic.startNotifications();
+    }
+    if (readGas) {
+        gasCharacteristic.addEventListener('characteristicvaluechanged', readDataGas);
+        await gasCharacteristic.startNotifications();
+    }
+    if (readQuaternion) {
+        quaternionCharacteristic.addEventListener('characteristicvaluechanged', readDataQuaternion);
+        await quaternionCharacteristic.startNotifications();
+    }
+    if (readRawMotion) {
+        motionRawDataCharacteristic.addEventListener('characteristicvaluechanged', readDataMotionRaw);
+        await motionRawDataCharacteristic.startNotifications();
+    }
+    if (readEuler) {
+        eulerCharacteristic.addEventListener('characteristicvaluechanged', readDataEuler);
+        await eulerCharacteristic.startNotifications();
+    }
 }
 
 /**
@@ -141,20 +166,34 @@ async function dataRecordStart() {
  */
 async function dataRecordStop() {
     console.log("Data recording stopped");
-    temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
-    pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
-    humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
-    gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
-    quaternionCharacteristic.removeEventListener('characteristicvaluechanged', readDataQuaternion);
-    motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataMotionRaw);
-    eulerCharacteristic.removeEventListener('characteristicvaluechanged', readDataEuler);
-    await temperatureCharacteristic.stopNotifications();
-    await pressureCharacteristic.stopNotifications();
-    await humidityCharacteristic.stopNotifications();
-    await gasCharacteristic.stopNotifications();
-    await motionRawDataCharacteristic.stopNotifications();
-    await quaternionCharacteristic.stopNotifications();
-    await eulerCharacteristic.stopNotifications();
+    if (readTemperature) {
+        temperatureCharacteristic.removeEventListener('characteristicvaluechanged', readDataTemp);
+        await temperatureCharacteristic.stopNotifications();
+    }
+    if (readPressure) {
+        pressureCharacteristic.removeEventListener('characteristicvaluechanged', readDataPressure);
+        await pressureCharacteristic.stopNotifications();
+    }
+    if (readHumidity) {
+        humidityCharacteristic.removeEventListener('characteristicvaluechanged', readDataHumidity);
+        await humidityCharacteristic.stopNotifications();
+    }
+    if (readGas) {
+        gasCharacteristic.removeEventListener('characteristicvaluechanged', readDataGas);
+        await gasCharacteristic.stopNotifications();
+    }
+    if (readQuaternion) {
+        quaternionCharacteristic.removeEventListener('characteristicvaluechanged', readDataQuaternion);
+        await quaternionCharacteristic.stopNotifications();
+    }
+    if (readRawMotion) {
+        motionRawDataCharacteristic.removeEventListener('characteristicvaluechanged', readDataMotionRaw);
+        await motionRawDataCharacteristic.stopNotifications();
+    }
+    if (readEuler) {
+        eulerCharacteristic.removeEventListener('characteristicvaluechanged', readDataEuler);
+        await eulerCharacteristic.stopNotifications();
+    }
     setRecordedData();
     submitData();
     console.log("Data saved in file");
@@ -521,4 +560,18 @@ function displayMotionConfig(formattedData) {
     document.getElementById("tempCompensationInterval").value = formattedData.tempCompensationInterval;
     document.getElementById("magnetCompensationInterval").value = formattedData.magnetCompensationInterval;
     document.getElementById("wakeOnMotion").checked = formattedData.wakeOnMotion;
+}
+
+/**
+ * Reads which sensors the user wants to have recorded
+ */
+function getDesiredSensors() {
+    readTemperature = document.getElementById("readTemperature").checked;
+    readPressure = document.getElementById("readPressure").checked;
+    readHumidity = document.getElementById("readHumidity").checked;
+    readGas = document.getElementById("readGas").checked;
+    readLight = document.getElementById("readLight").checked;
+    readEuler = document.getElementById("readEuler").checked;
+    readQuaternion = document.getElementById("readQuaternion").checked;
+    readRawMotion = document.getElementById("readRawMotion").checked;
 }
