@@ -300,6 +300,7 @@ function readDataGas() {
  * Reads and saves data from the Quaternion
  */
 function readDataQuaternion() {
+    console.log("Q:" + Date.now());
     arrQuatTime.push(Date.now());
     const { value } = this;
     var quatW = value.getInt32(0, littleEndian) / (1 << 30);
@@ -324,6 +325,7 @@ function readDataQuaternion() {
  * aka, acceleration, gyroscope and magnetometer
  */
 function readDataMotionRaw() {
+    console.log("R:" + Date.now());
     arrMotionRawTime.push(Date.now());
     const { value } = this;
     // Acceleration
@@ -353,6 +355,7 @@ function readDataMotionRaw() {
  * Reads and saves roll, pitch and yaw
  */
 function readDataEuler() {
+    console.log("E:" + Date.now());
     arrEulerTime.push(Date.now());
     const { value } = this;
     const roll = value.getInt32(0, littleEndian) / 65536;

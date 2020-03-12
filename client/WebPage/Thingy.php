@@ -14,7 +14,7 @@
 <body>
     <h1>Hello Griffith</h1>
     <button onclick="connect();" id="connectBTN">Connect!</button>
-    <div id="features" style="display:block">
+    <div id="features" style="display:none">
         <button onclick="disconnect();">Disconnect!</button>
         <button onclick="dataRecordStart();">Start Recording Data!</button>
         <button onclick="dataRecordStop();">Stop Recording Data!</button>
@@ -22,7 +22,7 @@
             <?php createTagFromArray(get_defined_constants(true)['user']); ?>
         </form>
         <button onclick="showConfigs();" id="configurationsBTN">Show Configurations</button>
-        <div id="configurations" style="display:block" class="row">
+        <div id="configurations" style="display:none" class="row">
             <div class="column">
                 <h2>Environment</h2>
                 <p>Temperature: (100 - 60,000 ms)<br>
