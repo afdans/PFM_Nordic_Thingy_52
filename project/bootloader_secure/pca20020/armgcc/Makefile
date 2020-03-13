@@ -124,7 +124,7 @@ INC_FOLDERS += \
   $(THINGY_ROOT)/include/drivers \
   $(THINGY_ROOT)/include/macros \
 	$(THINGY_ROOT)/include/util \
-  $(THINGY_ROOT)/external/segger_rtt
+  $(THINGY_ROOT)/external/sdk13/external/segger_rtt
 
 # Libraries common to all targets
 LIB_FILES += \
