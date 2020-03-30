@@ -10,6 +10,10 @@
 *.exe
 *.o
 *.so
+*.out
+*.map
+*.bin
+*.hex
 
 # ignore packaged files
 *.7z
