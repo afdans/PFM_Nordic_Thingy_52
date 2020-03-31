@@ -14,7 +14,8 @@ environmentData = environmentValues.data;
 Acc_X = motionData(1, :);
 Acc_Y = motionData(2, :);
 Acc_Z = motionData(3, :);
+Motion_T = datetime(motionData(end, :) / 1000, 'convertFrom', 'posixTime');
 
 %%
 figure();
-plot(sqrt(Acc_X .^ 2 + Acc_Y .^ 2 + Acc_Z .^ 2));
+plot(Motion_T, sqrt(Acc_X .^ 2 + Acc_Y .^ 2 + Acc_Z .^ 2));
