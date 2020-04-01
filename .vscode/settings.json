@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "ble_tms.h": "c",
+        "nrf_delay.h": "c"
+    }
+}

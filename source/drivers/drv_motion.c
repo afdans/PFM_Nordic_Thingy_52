@@ -134,6 +134,27 @@ static struct
     uint8_t                   wake_on_motion;
 } m_motion;
 
+static struct
+{
+    int16_t                  acc_x[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_y[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_z[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_x[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_y[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_z[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_x[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_y[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_z[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_x[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_y[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_z[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_w[MAX_IMPACT_SAMPLES];
+    int32_t                  roll[MAX_IMPACT_SAMPLES];
+    int32_t                  pitch[MAX_IMPACT_SAMPLES];
+    int32_t                  yaw[MAX_IMPACT_SAMPLES];
+    uint16_t                 index;
+} m_impact;
+
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
 static const long COMPASS_BIAS[NUM_AXES] = {1041138*(2^16), -3638024*(2^16), -23593626*(2^16)}; 
@@ -237,6 +258,19 @@ static void mpulib_data_send(void)
 
         if (valid_raw)
         {
+            // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
+            // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
+            // el rango es de -32 a 31
+            data[0] = m_impact.acc_x[m_impact.index] << 16;
+            data[1] = m_impact.acc_y[m_impact.index] << 16;
+            data[2] = m_impact.acc_z[m_impact.index] << 16;
+            data[3] = m_impact.gyro_x[m_impact.index] << 16;
+            data[4] = m_impact.gyro_y[m_impact.index] << 16;
+            data[5] = m_impact.gyro_z[m_impact.index] << 16;
+            data[6] = m_impact.mag_x[m_impact.index] << 16;
+            data[7] = m_impact.mag_y[m_impact.index] << 16;
+            data[8] = m_impact.mag_z[m_impact.index] << 16;
+            m_impact.index = (m_impact.index + 1) % MAX_IMPACT_SAMPLES;
             evt = DRV_MOTION_EVT_RAW;
             m_motion.evt_handler(&evt, data, sizeof(long) * 9);
         }
@@ -947,6 +981,26 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     err_code = app_timer_create(&m_pedo_timer_id, APP_TIMER_MODE_REPEATED, pedo_timeout_handler);
     RETURN_IF_ERROR(err_code);
 
+    impact_struct_init();
 
     return NRF_SUCCESS;
+}
+
+
+void impact_struct_init(void) {
+    for (int16_t i = 0; i < MAX_IMPACT_SAMPLES; i++ ){
+        m_impact.acc_x[i] = i;
+        m_impact.acc_y[i] = 2 * i;
+        m_impact.acc_z[i] = 3 * i;
+        m_impact.gyro_x[i] = - (i - 200);
+        m_impact.gyro_y[i] = -2 * (i - 200);
+        m_impact.gyro_z[i] = -4 * (i - 200);
+        m_impact.mag_x[i] = MAX_IMPACT_SAMPLES - (i + 7);
+        m_impact.mag_y[i] = MAX_IMPACT_SAMPLES + 7 * (i + 7);
+        m_impact.mag_z[i] = MAX_IMPACT_SAMPLES - 5 * (i + 7);
+        m_impact.roll[i] = m_impact.acc_x[i] * m_impact.gyro_x[i] - m_impact.mag_x[i];
+        m_impact.pitch[i] = m_impact.acc_y[i] * m_impact.gyro_y[i] - m_impact.mag_y[i];
+        m_impact.yaw[i] = m_impact.acc_z[i] * m_impact.gyro_z[i] - m_impact.mag_z[i];
+    }
+    m_impact.index = 0;
 }

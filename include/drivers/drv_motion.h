@@ -67,7 +67,8 @@ typedef enum
     DRV_MOTION_FEATURE_TAP,
     DRV_MOTION_FEATURE_ORIENTATION,
     DRV_MOTION_FEATURE_PEDOMETER,
-    DRV_MOTION_FEATURE_WAKE_ON_MOTION
+    DRV_MOTION_FEATURE_WAKE_ON_MOTION,
+    DRV_MOTION_FEATURE_IMPACT
 }drv_motion_feature_t;
 
 typedef uint32_t drv_motion_feature_mask_t;
@@ -85,6 +86,11 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define DRV_MOTION_FEATURE_MASK_ORIENTATION       (1UL << DRV_MOTION_FEATURE_ORIENTATION)
 #define DRV_MOTION_FEATURE_MASK_PEDOMETER         (1UL << DRV_MOTION_FEATURE_PEDOMETER)
 #define DRV_MOTION_FEATURE_MASK_WAKE_ON_MOTION    (1UL << DRV_MOTION_FEATURE_WAKE_ON_MOTION)
+#define DRV_MOTION_FEATURE_MASK_IMPACT            (1UL << DRV_MOTION_FEATURE_IMPACT)
+
+#define MAX_IMPACT_INTERVAL                        2
+#define MAX_MOTION_FREQUENCY                       200
+#define MAX_IMPACT_SAMPLES                         MAX_IMPACT_INTERVAL * MAX_MOTION_FREQUENCY
 
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_GYRO       |     \
@@ -97,6 +103,7 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_TAP            |     \
                                                    DRV_MOTION_FEATURE_MASK_ORIENTATION    |     \
                                                    DRV_MOTION_FEATURE_MASK_PEDOMETER      |     \
+                                                   DRV_MOTION_FEATURE_MASK_IMPACT         |     \
                                                    DRV_MOTION_FEATURE_MASK_WAKE_ON_MOTION)
 
 #define DRV_MOTION_FEATURE_DMP_MASK               (DRV_MOTION_FEATURE_MASK_QUAT           |     \
@@ -106,6 +113,7 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_GRAVITY_VECTOR |     \
                                                    DRV_MOTION_FEATURE_MASK_TAP            |     \
                                                    DRV_MOTION_FEATURE_MASK_ORIENTATION    |     \
+                                                   DRV_MOTION_FEATURE_MASK_IMPACT         |     \
                                                    DRV_MOTION_FEATURE_MASK_PEDOMETER)
 
 #define DRV_MOTION_FEATURE_GESTURE_MASK           (DRV_MOTION_FEATURE_MASK_TAP            |     \
@@ -118,6 +126,7 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_QUAT           |     \
                                                    DRV_MOTION_FEATURE_MASK_EULER          |     \
                                                    DRV_MOTION_FEATURE_MASK_ROT_MAT        |     \
+                                                   DRV_MOTION_FEATURE_MASK_IMPACT         |     \
                                                    DRV_MOTION_FEATURE_MASK_HEADING        |     \
                                                    DRV_MOTION_FEATURE_MASK_GRAVITY_VECTOR)
 
@@ -133,7 +142,8 @@ typedef enum
     DRV_MOTION_EVT_GRAVITY,
     DRV_MOTION_EVT_TAP,
     DRV_MOTION_EVT_ORIENTATION,
-    DRV_MOTION_EVT_PEDOMETER
+    DRV_MOTION_EVT_PEDOMETER,
+    DRV_MOTION_EVT_IMPACT
 }drv_motion_evt_t;
 
 /**@brief Motion driver event handler callback type.
@@ -202,5 +212,11 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg);
  */
 uint32_t drv_motion_sleep_prepare(bool wakeup);
 #endif
+
+/**
+ * Initialize the struct of arrays to check if it works
+*/
+void impact_struct_init(void);
+
 
 /** @} */

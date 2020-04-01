@@ -591,6 +591,15 @@ static void drv_motion_evt_handler(drv_motion_evt_t const * p_evt, void * p_data
         }
         break;
 
+        case DRV_MOTION_EVT_IMPACT:
+        {
+            /**
+             * Send data from before and after the impact
+             * But I first need to pass the data here now
+            */
+        }
+        break;
+
         default:
             NRF_LOG_WARNING("drv_motion_evt_handler: Unknown data!\r\n");
             break;
