@@ -84,6 +84,7 @@
                 Euler: <?php createToggleSwitch("readEuler"); ?>
                 Quaternion: <?php createToggleSwitch("readQuaternion"); ?>
                 Raw: <?php createToggleSwitch("readRawMotion"); ?>
+                Impact: <?php createToggleSwitch("readImpact"); ?>
             </div>
         </div>
     </div>

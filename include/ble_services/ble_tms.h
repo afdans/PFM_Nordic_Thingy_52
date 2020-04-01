@@ -155,6 +155,13 @@ typedef PACKED( struct
     uint8_t                   wake_on_motion;
 }) ble_tms_config_t;
 
+typedef PACKED( struct
+{
+    int16_t               type;
+    ble_tms_raw_accel_t   accel;
+    ble_tms_raw_gyro_t    gyro;
+}) ble_tms_impact_t;
+
 #define BLE_TMS_CONFIG_PEDO_INT_MIN   100   ///< Minimum pedometer interval [ms].
 #define BLE_TMS_CONFIG_PEDO_INT_MAX  5000   ///< Maximum pedometer interval [ms].
 #define BLE_TMS_CONFIG_TEMP_INT_MIN   100   ///< Minimum temperature compensation interval [ms].
@@ -178,6 +185,7 @@ typedef enum
     BLE_TMS_EVT_NOTIF_ROT_MAT,
     BLE_TMS_EVT_NOTIF_HEADING,
     BLE_TMS_EVT_NOTIF_GRAVITY,
+    BLE_TMS_EVT_NOTIF_IMPACT
 }ble_tms_evt_type_t;
 
 /* Forward declaration of the ble_tms_t type. */
@@ -218,6 +226,7 @@ struct ble_tms_s
     ble_gatts_char_handles_t rot_mat_handles;              /**< Handles related to the rotation matrix characteristic (as provided by the S132 SoftDevice). */
     ble_gatts_char_handles_t heading_handles;              /**< Handles related to the compass heading characteristic (as provided by the S132 SoftDevice). */
     ble_gatts_char_handles_t gravity_handles;              /**< Handles related to the gravity vector characteristic (as provided by the S132 SoftDevice). */
+    ble_gatts_char_handles_t impact_handles;               /**< Handles related to the impact characteristic. */
     uint16_t                 conn_handle;                  /**< Handle of the current connection (as provided by the S110 SoftDevice). BLE_CONN_HANDLE_INVALID if not in a connection. */
     bool                     is_tap_notif_enabled;         /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
     bool                     is_orientation_notif_enabled; /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
@@ -228,6 +237,7 @@ struct ble_tms_s
     bool                     is_rot_mat_notif_enabled;     /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
     bool                     is_heading_notif_enabled;     /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
     bool                     is_gravity_notif_enabled;     /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
+    bool                     is_impact_notif_enabled;      /**< Variable to indicate if the peer has enabled notification of the characteristic.*/
     ble_tms_evt_handler_t    evt_handler;                  /**< Event handler to be called for handling received data. */
 };
 
@@ -353,6 +363,17 @@ uint32_t ble_tms_heading_set(ble_tms_t * p_tms, ble_tms_heading_t * p_data);
  * @retval NRF_SUCCESS If the string was sent successfully. Otherwise, an error code is returned.
  */
 uint32_t ble_tms_gravity_set(ble_tms_t * p_tms, ble_tms_gravity_t * p_data);
+
+/**@brief Function for sending impact data.
+ *
+ * @details This function sends the input as an raw characteristic notification to the peer.
+ *
+ * @param[in] p_tms       Pointer to the Motion Service structure.
+ * @param[in] p_data      Pointer to the data.
+ *
+ * @retval NRF_SUCCESS If the string was sent successfully. Otherwise, an error code is returned.
+ */
+uint32_t ble_tms_impact_set(ble_tms_t * p_tms, ble_tms_impact_t * p_data);
 
 #endif // BLE_TMS_H__
 

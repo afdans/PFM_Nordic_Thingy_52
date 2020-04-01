@@ -79,6 +79,7 @@ const StepCounterID = '0405';
 const MotionRawDataID = '0406';
 const EulerID = '0407';
 const HeadingID = '0409';
+const ImpactID = '040b';
 
 /**
  * Connects the thingy and gets characteristics
@@ -122,6 +123,7 @@ async function servicesInit() {
     quaternionCharacteristic = await motionService.getCharacteristic(UUID(QuaternionID));
     motionRawDataCharacteristic = await motionService.getCharacteristic(UUID(MotionRawDataID));
     eulerCharacteristic = await motionService.getCharacteristic(UUID(EulerID));
+    impactCharacteristic = await motionService.getCharacteristic(UUID(ImpactID));
     console.log(thingy.name + " services ready");
 }
 
@@ -159,6 +161,11 @@ async function dataRecordStart() {
         eulerCharacteristic.addEventListener('characteristicvaluechanged', readDataEuler);
         await eulerCharacteristic.startNotifications();
     }
+    if (readImpact) {
+        console.log("I'm comming");
+        impactCharacteristic.addEventListener('characteristicvaluechanged', readDataImpact);
+        await impactCharacteristic.startNotifications();
+    }
 }
 
 /**
@@ -193,6 +200,10 @@ async function dataRecordStop() {
     if (readEuler) {
         eulerCharacteristic.removeEventListener('characteristicvaluechanged', readDataEuler);
         await eulerCharacteristic.stopNotifications();
+    }
+    if (readImpact) {
+        impactCharacteristic.removeEventListener('characteristicvaluechanged', readDataImpact);
+        await impactCharacteristic.stopNotifications();
     }
     setRecordedData();
     submitData();
@@ -325,7 +336,6 @@ function readDataQuaternion() {
  * aka, acceleration, gyroscope and magnetometer
  */
 function readDataMotionRaw() {
-    console.log("R:" + Date.now());
     arrMotionRawTime.push(Date.now());
     const { value } = this;
     // Acceleration
@@ -349,6 +359,33 @@ function readDataMotionRaw() {
     arrMagX.push(magX);
     arrMagY.push(magY);
     arrMagZ.push(magZ);
+    console.log("Acceleration-> X: " + accelX + " Y: " + accelY + " Z: " + accelZ);
+}
+
+/**
+ * Reads and saves impact data
+ * aka, acceleration, gyroscope and euler
+ */
+function readDataImpact() {
+    console.log("Reading impact data");
+    arrMotionRawTime.push(Date.now());
+    const { value } = this;
+    const type = value.getInt16(0, littleEndian);
+    // Acceleration
+    const accelX = value.getInt16(2, littleEndian) / 1024;
+    const accelY = value.getInt16(4, littleEndian) / 1024;
+    const accelZ = value.getInt16(6, littleEndian) / 1024;
+    // Gyroscope
+    const gyroX = value.getInt16(8, littleEndian) / 2048;
+    const gyroY = value.getInt16(10, littleEndian) / 2048;
+    const gyroZ = value.getInt16(12, littleEndian) / 2048;
+    arrAccelX.push(accelX);
+    arrAccelY.push(accelY);
+    arrAccelZ.push(accelZ);
+    arrGyroX.push(gyroX);
+    arrGyroY.push(gyroY);
+    arrGyroZ.push(gyroZ);
+    console.log("Type: " + type + " X: " + accelX + " Y: " + accelY + " Z: " + accelZ);
 }
 
 /**
@@ -577,4 +614,5 @@ function getDesiredSensors() {
     readEuler = document.getElementById("readEuler").checked;
     readQuaternion = document.getElementById("readQuaternion").checked;
     readRawMotion = document.getElementById("readRawMotion").checked;
+    readImpact = document.getElementById("readImpact").checked;
 }

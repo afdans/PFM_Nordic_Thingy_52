@@ -134,6 +134,23 @@ static struct
     uint8_t                   wake_on_motion;
 } m_motion;
 
+static struct
+{
+    int16_t                  acc_x[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_y[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_z[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_x[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_y[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_z[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_x[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_y[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_z[MAX_IMPACT_SAMPLES];
+    int32_t                  roll[MAX_IMPACT_SAMPLES];
+    int32_t                  pitch[MAX_IMPACT_SAMPLES];
+    int32_t                  yaw[MAX_IMPACT_SAMPLES];
+    uint16_t                 index;
+} m_impact;
+
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
 static const long COMPASS_BIAS[NUM_AXES] = {1041138*(2^16), -3638024*(2^16), -23593626*(2^16)}; 
@@ -314,6 +331,60 @@ static void mpulib_data_send(void)
 
             s_prev_pedo[0] = pedometer[0];
             s_prev_pedo[1] = pedometer[1];
+        }
+    }
+
+    if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT)
+    {
+        bool valid_raw = false;
+        data[0] = 0;
+        if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT_ACCEL)
+        {
+            if (inv_get_sensor_type_accel((long *)&data[1], &accuracy, &timestamp))
+            {
+                // X, Y, and Z
+                valid_raw = true;
+            }
+            else
+            {
+                data[1] = 0;
+                data[2] = 0;
+                data[3] = 0;
+            }
+        }
+
+        if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT_GYRO)
+        {
+            if (inv_get_sensor_type_gyro((long *)&data[4], &accuracy, &timestamp))
+            {
+                // X, Y, and Z
+                valid_raw = true;
+            }
+            else
+            {
+                data[4] = 0;
+                data[5] = 0;
+                data[6] = 0;
+            }
+        }
+
+        if (valid_raw)
+        {   /*
+            // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
+            // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
+            // el rango es de -32 a 31
+            data[0] = m_impact.acc_x[m_impact.index] << 16;
+            data[1] = m_impact.acc_y[m_impact.index] << 16;
+            data[2] = m_impact.acc_z[m_impact.index] << 16;
+            data[3] = m_impact.gyro_x[m_impact.index] << 16;
+            data[4] = m_impact.gyro_y[m_impact.index] << 16;
+            data[5] = m_impact.gyro_z[m_impact.index] << 16;
+            data[6] = m_impact.mag_x[m_impact.index] << 16;
+            data[7] = m_impact.mag_y[m_impact.index] << 16;
+            data[8] = m_impact.mag_z[m_impact.index] << 16;
+            m_impact.index = (m_impact.index + 1) % MAX_IMPACT_SAMPLES;*/
+            evt = DRV_MOTION_EVT_IMPACT;
+            m_motion.evt_handler(&evt, data, sizeof(long) * 7);
         }
     }
 }
@@ -947,6 +1018,23 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     err_code = app_timer_create(&m_pedo_timer_id, APP_TIMER_MODE_REPEATED, pedo_timeout_handler);
     RETURN_IF_ERROR(err_code);
 
+    impact_struct_init();
 
     return NRF_SUCCESS;
+}
+
+
+void impact_struct_init(void) {
+    for (int16_t i = 0; i < MAX_IMPACT_SAMPLES; i++ ){
+        m_impact.acc_x[i] = i % 31;
+        m_impact.acc_y[i] = (2 * i) % 31;
+        m_impact.acc_z[i] = (3 * i);
+        m_impact.gyro_x[i] = - (i - 200);
+        m_impact.gyro_y[i] = -2 * (i - 200);
+        m_impact.gyro_z[i] = -4 * (i - 200);
+        m_impact.roll[i] = 2;
+        m_impact.pitch[i] = 2;
+        m_impact.yaw[i] = 1;
+    }
+    m_impact.index = 0;
 }

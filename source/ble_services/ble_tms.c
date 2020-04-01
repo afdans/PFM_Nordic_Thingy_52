@@ -50,6 +50,7 @@
 #define BLE_UUID_TMS_ROT_MAT_CHAR     0x0408                      /**< The UUID of the rotation matrix Characteristic. */
 #define BLE_UUID_TMS_HEADING_CHAR     0x0409                      /**< The UUID of the compass heading Characteristic. */
 #define BLE_UUID_TMS_GRAVITY_CHAR     0x040A                      /**< The UUID of the gravity vector Characteristic. */
+#define BLE_UUID_TMS_IMPACT_CHAR      0x040B                      /**< The UUID of the impact Characteristic. */
 
 
 // EF68xxxx-9B35-4933-9B10-52FFA9740042
@@ -238,6 +239,23 @@ static void on_write(ble_tms_t * p_tms, ble_evt_t * p_ble_evt)
             if (p_tms->evt_handler != NULL)
             {
                 p_tms->evt_handler(p_tms, BLE_TMS_EVT_NOTIF_GRAVITY, p_evt_write->data, p_evt_write->len);
+            }
+        }
+    }
+    else if ( (p_evt_write->handle == p_tms->impact_handles.cccd_handle) &&
+         (p_evt_write->len == 2) )
+    {
+        bool notif_enabled;
+
+        notif_enabled = ble_srv_is_notification_enabled(p_evt_write->data);
+
+        if (p_tms->is_impact_notif_enabled != notif_enabled)
+        {
+            p_tms->is_impact_notif_enabled = notif_enabled;
+
+            if (p_tms->evt_handler != NULL)
+            {
+                p_tms->evt_handler(p_tms, BLE_TMS_EVT_NOTIF_IMPACT, p_evt_write->data, p_evt_write->len);
             }
         }
     }
@@ -920,6 +938,66 @@ static uint32_t config_char_add(ble_tms_t * p_tms, const ble_tms_init_t * p_tms_
                                            &p_tms->config_handles);
 }
 
+/**@brief Function for adding impact data characteristic.
+ *
+ * @param[in] p_tms       Motion Service structure.
+ * @param[in] p_tms_init  Information needed to initialize the service.
+ *
+ * @return NRF_SUCCESS on success, otherwise an error code.
+ */
+static uint32_t impact_char_add(ble_tms_t * p_tms, const ble_tms_init_t * p_tms_init)
+{
+    ble_gatts_char_md_t char_md;
+    ble_gatts_attr_md_t cccd_md;
+    ble_gatts_attr_t    attr_char_value;
+    ble_uuid_t          ble_uuid;
+    ble_gatts_attr_md_t attr_md;
+    ble_tms_impact_t    impact_init; // Tendrás que cambiarlo cuando sepas que tienes que mandar
+
+    memset(&impact_init, 0, sizeof(impact_init));
+    memset(&cccd_md, 0, sizeof(cccd_md));
+
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+
+    cccd_md.vloc = BLE_GATTS_VLOC_STACK;
+
+    memset(&char_md, 0, sizeof(char_md));
+
+    char_md.char_props.notify = 1;
+    char_md.p_char_user_desc  = NULL;
+    char_md.p_char_pf         = NULL;
+    char_md.p_user_desc_md    = NULL;
+    char_md.p_cccd_md         = &cccd_md;
+    char_md.p_sccd_md         = NULL;
+
+    ble_uuid.type = p_tms->uuid_type;
+    ble_uuid.uuid = BLE_UUID_TMS_IMPACT_CHAR;
+
+    memset(&attr_md, 0, sizeof(attr_md));
+
+    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&attr_md.write_perm);
+
+    attr_md.vloc    = BLE_GATTS_VLOC_STACK;
+    attr_md.rd_auth = 0;
+    attr_md.wr_auth = 0;
+    attr_md.vlen    = 1;
+
+    memset(&attr_char_value, 0, sizeof(attr_char_value));
+
+    attr_char_value.p_uuid    = &ble_uuid;
+    attr_char_value.p_attr_md = &attr_md;
+    attr_char_value.init_len  = sizeof(ble_tms_impact_t);
+    attr_char_value.init_offs = 0;
+    attr_char_value.p_value   = (uint8_t *)&impact_init;
+    attr_char_value.max_len   = sizeof(ble_tms_impact_t);
+
+    return sd_ble_gatts_characteristic_add(p_tms->service_handle,
+                                           &char_md,
+                                           &attr_char_value,
+                                           &p_tms->impact_handles);
+}
 
 void ble_tms_on_ble_evt(ble_tms_t * p_tms, ble_evt_t * p_ble_evt)
 {
@@ -974,6 +1052,7 @@ uint32_t ble_tms_init(ble_tms_t * p_tms, const ble_tms_init_t * p_tms_init)
     p_tms->is_rot_mat_notif_enabled     = false;
     p_tms->is_heading_notif_enabled     = false;
     p_tms->is_gravity_notif_enabled     = false;
+    p_tms->is_impact_notif_enabled      = false;
 
 
     // Add a custom base UUID.
@@ -1019,6 +1098,9 @@ uint32_t ble_tms_init(ble_tms_t * p_tms, const ble_tms_init_t * p_tms_init)
     VERIFY_SUCCESS(err_code);
     // Add the gravity vector characteristic.
     err_code = gravity_char_add(p_tms, p_tms_init);
+    VERIFY_SUCCESS(err_code);
+    // Add the  characteimpactristic.
+    err_code = impact_char_add(p_tms, p_tms_init);
     VERIFY_SUCCESS(err_code);
 
     return NRF_SUCCESS;
@@ -1269,6 +1351,34 @@ uint32_t ble_tms_gravity_set(ble_tms_t * p_tms, ble_tms_gravity_t * p_data)
     memset(&hvx_params, 0, sizeof(hvx_params));
 
     hvx_params.handle = p_tms->gravity_handles.value_handle;
+    hvx_params.p_data = (uint8_t *)p_data;
+    hvx_params.p_len  = &length;
+    hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+
+    return sd_ble_gatts_hvx(p_tms->conn_handle, &hvx_params);
+}
+
+
+uint32_t ble_tms_impact_set(ble_tms_t * p_tms, ble_tms_impact_t * p_data)
+{
+    ble_gatts_hvx_params_t hvx_params;
+    uint16_t               length = sizeof(ble_tms_impact_t);
+
+    VERIFY_PARAM_NOT_NULL(p_tms);
+
+    if ((p_tms->conn_handle == BLE_CONN_HANDLE_INVALID) || (!p_tms->is_impact_notif_enabled))
+    {
+        return NRF_ERROR_INVALID_STATE;
+    }
+
+    if (length > BLE_TMS_MAX_DATA_LEN)
+    {
+        return NRF_ERROR_INVALID_PARAM;
+    }
+
+    memset(&hvx_params, 0, sizeof(hvx_params));
+
+    hvx_params.handle = p_tms->impact_handles.value_handle;
     hvx_params.p_data = (uint8_t *)p_data;
     hvx_params.p_len  = &length;
     hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;

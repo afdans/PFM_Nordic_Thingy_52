@@ -47,6 +47,7 @@
 #include "macros_common.h"
 
 #define RAW_PARAM_NUM                 9     // Number of raw parameters (3 * acc + 3 * gyro + 3 * compass).
+#define IMPACT_PARAM_NUM              7     // Number of raw parameters (3 * acc + 3 * gyro) + type.
 #define RAW_Q_FORMAT_ACC_INTEGER_BITS 6     // Number of bits used for integer part of raw data.
 #define RAW_Q_FORMAT_GYR_INTEGER_BITS 11    // Number of bits used for integer part of raw data.
 #define RAW_Q_FORMAT_CMP_INTEGER_BITS 12    // Number of bits used for integer part of raw data.
@@ -221,6 +222,20 @@ static void ble_tms_evt_handler(ble_tms_t        * p_tms,
 
             err_code = m_motion_configuration_apply((ble_tms_config_t *)p_data);
             APP_ERROR_CHECK(err_code);
+            break;
+
+        case BLE_TMS_EVT_NOTIF_IMPACT:
+            NRF_LOG_INFO("ble_tms_evt_handler: BLE_TMS_EVT_NOTIF_IMPACT - %d\r\n", p_tms->is_gravity_notif_enabled);
+            if (p_tms->is_impact_notif_enabled)
+            {
+                err_code = drv_motion_enable(DRV_MOTION_FEATURE_MASK_IMPACT);
+                APP_ERROR_CHECK(err_code);
+            }
+            else
+            {
+                err_code = drv_motion_disable(DRV_MOTION_FEATURE_MASK_IMPACT);
+                APP_ERROR_CHECK(err_code);
+            }
             break;
 
         default:
@@ -588,6 +603,110 @@ static void drv_motion_evt_handler(drv_motion_evt_t const * p_evt, void * p_data
                                                                           p_pedo[1]);
 
             (void)ble_tms_pedo_set(&m_tms, &data);
+        }
+        break;
+
+        case DRV_MOTION_EVT_IMPACT:
+        {
+            /**
+             * Send data from before and after the impact
+             * But I first need to pass the data here now
+            */
+            APP_ERROR_CHECK_BOOL(size == sizeof(int32_t) * (IMPACT_PARAM_NUM));
+
+            ble_tms_impact_t data;
+            int32_t          * p_impact = (int32_t *)p_data;
+
+            /* p_impact is in 16Q16 format. This is compressed for BLE transfer. */
+
+            // Set upper and lower overflow limits.
+            static const int16_t overflow_limit_upper[IMPACT_PARAM_NUM - 1] = {
+                                                    (1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)) - 1,
+                                                    (1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)) - 1,
+                                                    (1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)) - 1,
+                                                    (1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1)) - 1,
+                                                    (1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1)) - 1,
+                                                    (1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1)) - 1};
+
+            static const int16_t overflow_limit_lower[IMPACT_PARAM_NUM - 1] = {
+                                                    -(1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)),
+                                                    -(1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)),
+                                                    -(1 << (RAW_Q_FORMAT_ACC_INTEGER_BITS - 1)),
+                                                    -(1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1)),
+                                                    -(1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1)),
+                                                    -(1 << (RAW_Q_FORMAT_GYR_INTEGER_BITS - 1))};
+
+            int16_t overflow_check;
+
+            for (uint8_t i = 1; i < IMPACT_PARAM_NUM; i++)
+            {
+                overflow_check = p_impact[i] >> 16;    // Right shift 16 to remove decimal part.
+
+                if (overflow_check >= overflow_limit_upper[i - 1])
+                {
+                    NRF_LOG_WARNING("p_impact[%d] over limit. Val: %d limit: %d \r\n", i, overflow_check, overflow_limit_upper[i - 1]);
+                    p_impact[i] = overflow_limit_upper[i - 1] << 16;
+                }
+                else if (overflow_check < overflow_limit_lower[i - 1])
+                {
+                    NRF_LOG_WARNING("p_impact[%d] below limit. Val: %d limit: %d \r\n", i, overflow_check, overflow_limit_lower[i - 1]);
+                    p_impact[i] = overflow_limit_lower[i -  1] << 16;
+                }
+                else
+                {
+                    // No overflow has occured.
+                }
+            }
+
+            data.type =    (int16_t)p_impact[0];
+
+            data.accel.x = (int16_t)(p_impact[1] >> RAW_Q_FORMAT_ACC_INTEGER_BITS);
+            data.accel.y = (int16_t)(p_impact[2] >> RAW_Q_FORMAT_ACC_INTEGER_BITS);
+            data.accel.z = (int16_t)(p_impact[3] >> RAW_Q_FORMAT_ACC_INTEGER_BITS);
+
+            data.gyro.x =  (int16_t)(p_impact[4] >> RAW_Q_FORMAT_GYR_INTEGER_BITS);
+            data.gyro.y =  (int16_t)(p_impact[5] >> RAW_Q_FORMAT_GYR_INTEGER_BITS);
+            data.gyro.z =  (int16_t)(p_impact[6] >> RAW_Q_FORMAT_GYR_INTEGER_BITS);
+
+            #if NRF_LOG_ENABLED
+                NRF_LOG_DEBUG("DRV_MOTION_EVT_IMPACT:\r\n");
+
+                double f_buf;
+                char buffer[8];
+
+                f_buf = (double)p_impact[0];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" accel.x [G's] = %s:\r\n", nrf_log_push(buffer));
+
+                f_buf = (double)p_impact[1];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" accel.y [G's] = %s:\r\n", nrf_log_push(buffer));
+
+                f_buf = (double)p_impact[2];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" accel.z [G's] = %s:\r\n", nrf_log_push(buffer));
+
+                
+                f_buf = (double)p_impact[3];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" gyro.x [deg/s] = %s:\r\n", nrf_log_push(buffer));
+
+                f_buf = (double)p_impact[4];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" gyro.y [deg/s] = %s:\r\n", nrf_log_push(buffer));
+
+                f_buf = (double)p_impact[5];
+                f_buf = f_buf/(1<<16);
+                sprintf(buffer, "%.2f", f_buf);
+                NRF_LOG_DEBUG(" gyro.z [deg/s] = %s:\r\n", nrf_log_push(buffer));
+            #endif
+
+            (void)ble_tms_impact_set(&m_tms, &data);
         }
         break;
 
