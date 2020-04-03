@@ -93,7 +93,7 @@ typedef uint32_t drv_motion_feature_mask_t;
 
 #define MAX_IMPACT_INTERVAL                        2
 #define MAX_MOTION_FREQUENCY                       200
-#define MAX_IMPACT_SAMPLES                         MAX_IMPACT_INTERVAL * MAX_MOTION_FREQUENCY
+#define MAX_IMPACT_SAMPLES                         (MAX_IMPACT_INTERVAL * MAX_MOTION_FREQUENCY + 1)
 #define IMPACT_ACCELERATION_THRESHOLD              3
 
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \

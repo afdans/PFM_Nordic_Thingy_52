@@ -136,19 +136,20 @@ static struct
 
 static struct
 {
-    int16_t                  acc_x[MAX_IMPACT_SAMPLES];
-    int16_t                  acc_y[MAX_IMPACT_SAMPLES];
-    int16_t                  acc_z[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_x[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_y[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_z[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_x[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_y[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_z[MAX_IMPACT_SAMPLES];
-    int32_t                  roll[MAX_IMPACT_SAMPLES];
-    int32_t                  pitch[MAX_IMPACT_SAMPLES];
-    int32_t                  yaw[MAX_IMPACT_SAMPLES];
-    uint16_t                 index;
+    int32_t  acc_x[MAX_IMPACT_SAMPLES];
+    int32_t  acc_y[MAX_IMPACT_SAMPLES];
+    int32_t  acc_z[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_x[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_y[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_z[MAX_IMPACT_SAMPLES];
+    int32_t  roll[MAX_IMPACT_SAMPLES];
+    int32_t  pitch[MAX_IMPACT_SAMPLES];
+    int32_t  yaw[MAX_IMPACT_SAMPLES];
+    uint16_t currentIndex;
+    uint16_t impactIndex;
+    uint16_t writeIndex;
+    int32_t  previous_acceleration;
+    bool     impact;
 } m_impact;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
@@ -368,24 +369,43 @@ static void mpulib_data_send(void)
             }
         }
 
+        m_impact.acc_x[m_impact.currentIndex] = data[1];
+        m_impact.acc_y[m_impact.currentIndex] = data[2];
+        m_impact.acc_z[m_impact.currentIndex] = data[3];
+        m_impact.gyro_x[m_impact.currentIndex] = data[4];
+        m_impact.gyro_y[m_impact.currentIndex] = data[5];
+        m_impact.gyro_z[m_impact.currentIndex] = data[6];
+
         if (valid_raw)
-        {   /*
-            // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
-            // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
-            // el rango es de -32 a 31
-            data[0] = m_impact.acc_x[m_impact.index] << 16;
-            data[1] = m_impact.acc_y[m_impact.index] << 16;
-            data[2] = m_impact.acc_z[m_impact.index] << 16;
-            data[3] = m_impact.gyro_x[m_impact.index] << 16;
-            data[4] = m_impact.gyro_y[m_impact.index] << 16;
-            data[5] = m_impact.gyro_z[m_impact.index] << 16;
-            data[6] = m_impact.mag_x[m_impact.index] << 16;
-            data[7] = m_impact.mag_y[m_impact.index] << 16;
-            data[8] = m_impact.mag_z[m_impact.index] << 16;
-            m_impact.index = (m_impact.index + 1) % MAX_IMPACT_SAMPLES;*/
-            evt = DRV_MOTION_EVT_IMPACT;
-            m_motion.evt_handler(&evt, data, sizeof(long) * 7);
+        {
+            uint32_t current_acceleration = (data[1] >> 16) * (data[1] >> 16) + (data[2] >> 16) * (data[2] >> 16) + (data[3] >> 16) * (data[3] >> 16);
+            if (!m_impact.impact && (current_acceleration >= (IMPACT_ACCELERATION_THRESHOLD * IMPACT_ACCELERATION_THRESHOLD))){
+                if (m_impact.previous_acceleration > current_acceleration){
+                    m_impact.impact = true;
+                    m_impact.writeIndex = (m_impact.currentIndex + 400 / 2) % 401;
+                    m_impact.impactIndex = m_impact.writeIndex;
+                } else{
+                    m_impact.previous_acceleration = current_acceleration;
+                }
+            }
+            if (m_impact.impact){
+                data[0] = MAX_IMPACT_SAMPLES;
+                data[1] = m_impact.acc_x[m_impact.writeIndex];
+                data[2] = m_impact.acc_y[m_impact.writeIndex];
+                data[3] = m_impact.acc_z[m_impact.writeIndex];
+                data[4] = m_impact.gyro_x[m_impact.writeIndex];
+                data[5] = m_impact.gyro_y[m_impact.writeIndex];
+                data[6] = m_impact.gyro_z[m_impact.writeIndex];
+                m_impact.writeIndex = (m_impact.writeIndex + 1) % 401;
+                evt = DRV_MOTION_EVT_IMPACT;
+                m_motion.evt_handler(&evt, data, sizeof(long) * 7);
+                if (m_impact.writeIndex == m_impact.impactIndex){
+                    m_impact.impact = false;
+                    m_impact.previous_acceleration = 0;
+                }
+            }
         }
+        m_impact.currentIndex = (m_impact.currentIndex + 1) % 401;
     }
 }
 
@@ -1025,7 +1045,7 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
 
 
 void impact_struct_init(void) {
-    for (int16_t i = 0; i < MAX_IMPACT_SAMPLES; i++ ){
+    /*for (int16_t i = 0; i < MAX_IMPACT_SAMPLES; i++){
         m_impact.acc_x[i] = i % 31;
         m_impact.acc_y[i] = (2 * i) % 31;
         m_impact.acc_z[i] = (3 * i);
@@ -1035,6 +1055,8 @@ void impact_struct_init(void) {
         m_impact.roll[i] = 2;
         m_impact.pitch[i] = 2;
         m_impact.yaw[i] = 1;
-    }
-    m_impact.index = 0;
+    }*/
+    m_impact.currentIndex = 0;
+    m_impact.impact = false;
+    m_impact.previous_acceleration = 0;
 }
