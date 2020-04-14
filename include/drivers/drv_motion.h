@@ -86,6 +86,10 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define DRV_MOTION_FEATURE_MASK_PEDOMETER         (1UL << DRV_MOTION_FEATURE_PEDOMETER)
 #define DRV_MOTION_FEATURE_MASK_WAKE_ON_MOTION    (1UL << DRV_MOTION_FEATURE_WAKE_ON_MOTION)
 
+#define IMPACT_INTERVAL 2
+#define MPU_FREQ_MAX 200
+#define MAX_IMPACT_SAMPLES (MPU_FREQ_MAX * IMPACT_INTERVAL + 1)
+
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_GYRO       |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_COMPASS    |     \

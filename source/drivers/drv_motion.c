@@ -137,6 +137,24 @@ static struct
     uint16_t                  impact_threshold;
 } m_motion;
 
+static struct
+{
+    int32_t  acc_x[MAX_IMPACT_SAMPLES];
+    int32_t  acc_y[MAX_IMPACT_SAMPLES];
+    int32_t  acc_z[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_x[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_y[MAX_IMPACT_SAMPLES];
+    int32_t  gyro_z[MAX_IMPACT_SAMPLES];
+    int32_t  roll[MAX_IMPACT_SAMPLES];
+    int32_t  pitch[MAX_IMPACT_SAMPLES];
+    int32_t  yaw[MAX_IMPACT_SAMPLES];
+    uint16_t currentIndex;
+    uint16_t impactIndex;
+    uint16_t writeIndex;
+    int32_t  previous_acceleration;
+    bool     impact;
+} m_impact;
+
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
 static const long COMPASS_BIAS[NUM_AXES] = {1041138*(2^16), -3638024*(2^16), -23593626*(2^16)}; 
@@ -238,7 +256,37 @@ static void mpulib_data_send(void)
             }
         }
 
-        if (valid_raw)
+        if (m_motion.impact_detection){
+            m_impact.acc_x[m_impact.currentIndex]  = data[0];
+            m_impact.acc_y[m_impact.currentIndex]  = data[1];
+            m_impact.acc_z[m_impact.currentIndex]  = data[2];
+            m_impact.gyro_x[m_impact.currentIndex] = data[3];
+            m_impact.gyro_y[m_impact.currentIndex] = data[4];
+            m_impact.gyro_z[m_impact.currentIndex] = data[5];
+            uint32_t current_acceleration = (data[0] >> 16) * (data[0] >> 16) + (data[1] >> 16) * (data[1] >> 16) + (data[2] >> 16) * (data[2] >> 16);
+            if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
+                if (m_impact.previous_acceleration > current_acceleration){
+                    m_impact.impact = true;
+                    m_impact.writeIndex = (m_impact.currentIndex + m_motion.motion_freq_hz) % (2 * m_motion.motion_freq_hz + 1);
+                    m_impact.impactIndex = m_impact.writeIndex;
+                } else{
+                    m_impact.previous_acceleration = current_acceleration;
+                }
+            }
+            if (m_impact.impact){
+                data[0] = m_impact.acc_x[m_impact.writeIndex];
+                data[1] = m_impact.acc_y[m_impact.writeIndex];
+                data[2] = m_impact.acc_z[m_impact.writeIndex];
+                data[3] = m_impact.gyro_x[m_impact.writeIndex];
+                data[4] = m_impact.gyro_y[m_impact.writeIndex];
+                data[5] = m_impact.gyro_z[m_impact.writeIndex];
+                data[6] = 0;
+                data[7] = 0;
+                data[8] = 0;
+                evt = DRV_MOTION_EVT_RAW;
+                m_motion.evt_handler(&evt, data, sizeof(long) * 9);
+            }
+        } else if (valid_raw)
         {
             evt = DRV_MOTION_EVT_RAW;
             m_motion.evt_handler(&evt, data, sizeof(long) * 9);
@@ -259,9 +307,28 @@ static void mpulib_data_send(void)
     {
         if (inv_get_sensor_type_euler((long *)data, &accuracy, &timestamp))
         {
-            evt = DRV_MOTION_EVT_EULER;
-            // Roll, pitch and yaw
-            m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+            if (m_motion.impact_detection){
+                m_impact.roll[m_impact.currentIndex]  = data[0];
+                m_impact.pitch[m_impact.currentIndex] = data[1];
+                m_impact.yaw[m_impact.currentIndex]   = data[2];
+
+                if(m_impact.impact){
+                    data[0] = m_impact.roll[m_impact.writeIndex];
+                    data[1] = m_impact.pitch[m_impact.writeIndex];
+                    data[2] = m_impact.yaw[m_impact.writeIndex];
+                    evt = DRV_MOTION_EVT_EULER;
+                    // Roll, pitch and yaw
+                    m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+                }
+            }else{
+                evt = DRV_MOTION_EVT_EULER;
+                // Roll, pitch and yaw
+                m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+            }
+        } else if(m_motion.impact_detection){
+            m_impact.roll[m_impact.currentIndex]  = 0;
+            m_impact.pitch[m_impact.currentIndex] = 0;
+            m_impact.yaw[m_impact.currentIndex]   = 0;
         }
     }
 
@@ -318,6 +385,17 @@ static void mpulib_data_send(void)
             s_prev_pedo[0] = pedometer[0];
             s_prev_pedo[1] = pedometer[1];
         }
+    }
+
+    if (m_motion.impact_detection){
+        if (m_impact.impact){
+            m_impact.writeIndex = (m_impact.writeIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
+            if (m_impact.writeIndex == m_impact.impactIndex){
+                        m_impact.impact = false;
+                        m_impact.previous_acceleration = 0;
+            }
+        }
+        m_impact.currentIndex = (m_impact.currentIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
     }
 }
 
@@ -931,6 +1009,10 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     m_motion.impact_detection      = 0;
     m_motion.impact_threshold      = DEFAULT_IMP_THR;
 
+    m_impact.currentIndex          = 0;
+    m_impact.previous_acceleration = 0;
+    m_impact.impact                = 0;
+
     err_code = drv_acc_init(&lis_init_params);
     RETURN_IF_ERROR(err_code);
 
@@ -953,7 +1035,6 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
 
     err_code = app_timer_create(&m_pedo_timer_id, APP_TIMER_MODE_REPEATED, pedo_timeout_handler);
     RETURN_IF_ERROR(err_code);
-
 
     return NRF_SUCCESS;
 }
