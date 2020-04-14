@@ -61,6 +61,7 @@
 #define TEMP_READ_MS     (500UL) ///< Default temperature period [ms].
 #define COMPASS_READ_MS  (500UL) ///< Default compass (magnetometer) period [ms].
 #define DEFAULT_MPU_HZ    (10UL) ///< Default motion processing unit period [ms].
+#define DEFAULT_IMP_THR    (3UL) ///< Default motion processing unit period [ms].
 #define NUM_AXES             (3) ///< Number of principal axes for each sensor type.
 #define  NRF_LOG_MODULE_NAME "drv_motion    "
 #include "nrf_log.h"
@@ -132,6 +133,8 @@ static struct
     uint16_t                  compass_interval_ms;
     uint16_t                  motion_freq_hz;
     uint8_t                   wake_on_motion;
+    uint8_t                   impact_detection;
+    uint16_t                  impact_threshold;
 } m_motion;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
@@ -864,6 +867,8 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg)
     m_motion.compass_interval_ms   = p_cfg->compass_interval_ms;
     m_motion.motion_freq_hz        = p_cfg->motion_freq_hz;
     m_motion.wake_on_motion        = p_cfg->wake_on_motion;
+    m_motion.impact_detection      = p_cfg->impact_detection;
+    m_motion.impact_threshold      = p_cfg->impact_threshold;
 
     if (m_motion.running)
     {
@@ -923,6 +928,8 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     m_motion.compass_interval_ms   = COMPASS_READ_MS;
     m_motion.motion_freq_hz        = DEFAULT_MPU_HZ;
     m_motion.wake_on_motion        = 1;
+    m_motion.impact_detection      = 0;
+    m_motion.impact_threshold      = DEFAULT_IMP_THR;
 
     err_code = drv_acc_init(&lis_init_params);
     RETURN_IF_ERROR(err_code);

@@ -72,6 +72,12 @@
                 <p>Wake On Motion: <br>
                     <?php createToggleSwitch("wakeOnMotion"); ?>
                 </p>
+                <p>Impact Detection <br>
+                    <?php createToggleSwitch("impactDetection"); ?>
+                </p>
+                <p>Impact Threshold: (3 - 15 G)<br>
+                    <input type="text" id="impactThreshold">
+                </p>
                 <button onclick="saveMotionConfig();">Save Motion Config!</button>
             </div>
             <div class="column">

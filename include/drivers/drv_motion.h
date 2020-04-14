@@ -149,6 +149,8 @@ typedef struct
     uint16_t compass_interval_ms;
     uint16_t motion_freq_hz;
     uint8_t  wake_on_motion;
+    uint8_t  impact_detection;
+    uint8_t  impact_threshold;
 }drv_motion_cfg_t;
 
 /**@brief Motion initialization struct.

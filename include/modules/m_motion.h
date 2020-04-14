@@ -62,7 +62,9 @@
     .temp_interval_ms    = 500,   \
     .compass_interval_ms = 500,   \
     .motion_freq_hz      = 10,    \
-    .wake_on_motion      = 1      \
+    .wake_on_motion      = 1,     \
+    .impact_detection    = 0,     \
+    .impact_threshold    = 3      \
 }
 
 /**@brief TWI configuration struct.
