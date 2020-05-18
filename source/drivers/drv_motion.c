@@ -165,7 +165,6 @@ static struct
     bool     enabled;
 } m_sonification;
 
->>>>>>> impact_detection_1
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
 static const long COMPASS_BIAS[NUM_AXES] = {1041138*(2^16), -3638024*(2^16), -23593626*(2^16)}; 
@@ -299,19 +298,6 @@ static void mpulib_data_send(void)
             }
         } else if (valid_raw)
         {
-            // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
-            // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
-            // el rango es de -32 a 31
-            data[0] = m_impact.acc_x[m_impact.index] << 16;
-            data[1] = m_impact.acc_y[m_impact.index] << 16;
-            data[2] = m_impact.acc_z[m_impact.index] << 16;
-            data[3] = m_impact.gyro_x[m_impact.index] << 16;
-            data[4] = m_impact.gyro_y[m_impact.index] << 16;
-            data[5] = m_impact.gyro_z[m_impact.index] << 16;
-            data[6] = m_impact.mag_x[m_impact.index] << 16;
-            data[7] = m_impact.mag_y[m_impact.index] << 16;
-            data[8] = m_impact.mag_z[m_impact.index] << 16;
-            m_impact.index = (m_impact.index + 1) % MAX_IMPACT_SAMPLES;
             evt = DRV_MOTION_EVT_RAW;
             m_motion.evt_handler(&evt, data, sizeof(long) * 9);
         }
@@ -1065,8 +1051,6 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     err_code = app_timer_create(&m_pedo_timer_id, APP_TIMER_MODE_REPEATED, pedo_timeout_handler);
     RETURN_IF_ERROR(err_code);
 
-    impact_struct_init();
-
     return NRF_SUCCESS;
 }
 
@@ -1092,25 +1076,6 @@ uint32_t drv_motion_disable_sonification(){
     m_sonification.volume         = 0;
 
     drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
->>>>>>> impact_detection_1
 
     return NRF_SUCCESS;
-}
-
-
-void impact_struct_init(void) {
-    /*for (int16_t i = 0; i < MAX_IMPACT_SAMPLES; i++){
-        m_impact.acc_x[i] = i % 31;
-        m_impact.acc_y[i] = (2 * i) % 31;
-        m_impact.acc_z[i] = (3 * i);
-        m_impact.gyro_x[i] = - (i - 200);
-        m_impact.gyro_y[i] = -2 * (i - 200);
-        m_impact.gyro_z[i] = -4 * (i - 200);
-        m_impact.roll[i] = 2;
-        m_impact.pitch[i] = 2;
-        m_impact.yaw[i] = 1;
-    }*/
-    m_impact.currentIndex = 0;
-    m_impact.impact = false;
-    m_impact.previous_acceleration = 0;
 }
