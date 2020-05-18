@@ -442,6 +442,17 @@ __STATIC_INLINE void nrf_pwm_sequence_set(NRF_PWM_Type * p_reg,
                                           uint8_t                    seq_id,
                                           nrf_pwm_sequence_t const * p_seq);
 
+                                          /**
+ * @brief Function for defining updated sequence of PWM duty cycles.
+ *
+ * @param[in] p_reg  Pointer to the peripheral registers structure.
+ * @param[in] seq_id Identifier of the sequence (0 or 1).
+ * @param[in] p_seq  Pointer to the sequence definition.
+ */
+__STATIC_INLINE void nrf_pwm_sequence_update_set(NRF_PWM_Type * p_reg,
+                                                uint8_t                    seq_id,
+                                                nrf_pwm_sequence_t const * p_seq);
+
 /**
  * @brief Function for modifying the pointer to the duty cycle values
  *        in the specified sequence.
@@ -636,6 +647,20 @@ __STATIC_INLINE void nrf_pwm_sequence_set(NRF_PWM_Type * p_reg,
     nrf_pwm_seq_cnt_set(      p_reg, seq_id, p_seq->length);
     nrf_pwm_seq_refresh_set(  p_reg, seq_id, p_seq->repeats);
     nrf_pwm_seq_end_delay_set(p_reg, seq_id, p_seq->end_delay);
+}
+
+__STATIC_INLINE void nrf_pwm_sequence_update_set(NRF_PWM_Type * p_reg,
+                                                uint8_t                    seq_id,
+                                                nrf_pwm_sequence_t const * p_seq)
+{
+    ASSERT(p_seq != NULL);
+
+    nrf_pwm_seq_ptr_set(      p_reg, seq_id, p_seq->values.p_raw);
+    nrf_pwm_seq_cnt_set(      p_reg, seq_id, p_seq->length);
+    // Leer estas dos funciones para buscar que pita y 
+    // que no pete al mismo tiempo
+    //nrf_pwm_seq_refresh_set(  p_reg, seq_id, p_seq->repeats);
+    //nrf_pwm_seq_end_delay_set(p_reg, seq_id, p_seq->end_delay);
 }
 
 __STATIC_INLINE void nrf_pwm_seq_ptr_set(NRF_PWM_Type * p_reg,

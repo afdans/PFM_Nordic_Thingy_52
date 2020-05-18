@@ -305,6 +305,43 @@ uint32_t nrf_drv_pwm_complex_playback(nrf_drv_pwm_t const * const p_instance,
                                       uint32_t                   flags);
 
 /**
+ * @brief Function for updating a single sequence playback.
+ *
+ * To take advantage of the looping mechanism in the PWM peripheral, both
+ * sequences must be used (single sequence can be played back only once by
+ * the peripheral). Therefore, the provided sequence is internally set and
+ * played back as both sequence 0 and sequence 1. Consequently, if end of
+ * sequence notifications are required, events for both sequences should be
+ * used (that means that both the @ref NRF_DRV_PWM_FLAG_SIGNAL_END_SEQ0 flag
+ * and the @ref NRF_DRV_PWM_FLAG_SIGNAL_END_SEQ1 flag should be specified and
+ * the @ref NRF_DRV_PWM_EVT_END_SEQ0 event and the @ref NRF_DRV_PWM_EVT_END_SEQ1
+ * event should be handled in the same way).
+ *
+ * Use the @ref NRF_DRV_PWM_FLAG_START_VIA_TASK flag if you want the playback
+ * to be only prepared by this function, and you want to start it later by
+ * triggering a task (using PPI for instance). The function will then return
+ * the address of the task to be triggered.
+ *
+ * @note The array containing the duty cycle values for the specified sequence
+ *       must be in RAM and cannot be allocated on stack.
+ *       For detailed information, see @ref nrf_pwm_sequence_t.
+ *
+ * @param[in] p_instance     Pointer to the driver instance structure.
+ * @param[in] p_sequence     Sequence to be played back.
+ * @param[in] playback_count Number of playbacks to be performed (must not be 0).
+ * @param[in] flags          Additional options. Pass any combination of
+ *                           @ref nrf_drv_pwm_flag_t "playback flags", or 0
+ *                           for default settings.
+ *
+ * @return Address of the task to be triggered to start the playback if the @ref
+ *         NRF_DRV_PWM_FLAG_START_VIA_TASK flag was used, 0 otherwise.
+ */
+uint32_t nrf_drv_pwm_update_playback(nrf_drv_pwm_t const * const p_instance,
+                                    nrf_pwm_sequence_t const * p_sequence,
+                                    uint16_t                   playback_count,
+                                    uint32_t                   flags);
+
+/**
  * @brief Function for advancing the active sequence.
  *
  * This function only applies to @ref NRF_PWM_STEP_TRIGGERED mode.
