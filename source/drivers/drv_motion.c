@@ -48,6 +48,8 @@
 #include "nrf_delay.h"
 #include "drv_ext_gpio.h"
 #include "nrf_drv_gpiote.h"
+#include "drv_speaker.h"
+#include "nrf_drv_pwm.h"
 
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
@@ -61,6 +63,7 @@
 #define TEMP_READ_MS     (500UL) ///< Default temperature period [ms].
 #define COMPASS_READ_MS  (500UL) ///< Default compass (magnetometer) period [ms].
 #define DEFAULT_MPU_HZ    (10UL) ///< Default motion processing unit period [ms].
+#define DEFAULT_IMP_THR    (3UL) ///< Default motion processing unit period [ms].
 #define NUM_AXES             (3) ///< Number of principal axes for each sensor type.
 #define  NRF_LOG_MODULE_NAME "drv_motion    "
 #include "nrf_log.h"
@@ -132,11 +135,12 @@ static struct
     uint16_t                  compass_interval_ms;
     uint16_t                  motion_freq_hz;
     uint8_t                   wake_on_motion;
+    uint8_t                   impact_detection;
+    uint16_t                  impact_threshold;
 } m_motion;
 
 static struct
 {
-<<<<<<< HEAD
     int32_t  acc_x[MAX_IMPACT_SAMPLES];
     int32_t  acc_y[MAX_IMPACT_SAMPLES];
     int32_t  acc_z[MAX_IMPACT_SAMPLES];
@@ -151,27 +155,17 @@ static struct
     uint16_t writeIndex;
     int32_t  previous_acceleration;
     bool     impact;
-=======
-    int16_t                  acc_x[MAX_IMPACT_SAMPLES];
-    int16_t                  acc_y[MAX_IMPACT_SAMPLES];
-    int16_t                  acc_z[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_x[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_y[MAX_IMPACT_SAMPLES];
-    int16_t                  gyro_z[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_x[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_y[MAX_IMPACT_SAMPLES];
-    int16_t                  mag_z[MAX_IMPACT_SAMPLES];
-    int32_t                  quat_x[MAX_IMPACT_SAMPLES];
-    int32_t                  quat_y[MAX_IMPACT_SAMPLES];
-    int32_t                  quat_z[MAX_IMPACT_SAMPLES];
-    int32_t                  quat_w[MAX_IMPACT_SAMPLES];
-    int32_t                  roll[MAX_IMPACT_SAMPLES];
-    int32_t                  pitch[MAX_IMPACT_SAMPLES];
-    int32_t                  yaw[MAX_IMPACT_SAMPLES];
-    uint16_t                 index;
->>>>>>> dcd79aaff7554a3eba8c5e91df20ae2517fca4ed
 } m_impact;
 
+static struct
+{
+    uint8_t  volume;
+    uint16_t duration;
+    uint16_t center_freq_hz;
+    bool     enabled;
+} m_sonification;
+
+>>>>>>> impact_detection_1
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
 static const long COMPASS_BIAS[NUM_AXES] = {1041138*(2^16), -3638024*(2^16), -23593626*(2^16)}; 
@@ -273,7 +267,37 @@ static void mpulib_data_send(void)
             }
         }
 
-        if (valid_raw)
+        if (m_motion.impact_detection){
+            m_impact.acc_x[m_impact.currentIndex]  = data[0];
+            m_impact.acc_y[m_impact.currentIndex]  = data[1];
+            m_impact.acc_z[m_impact.currentIndex]  = data[2];
+            m_impact.gyro_x[m_impact.currentIndex] = data[3];
+            m_impact.gyro_y[m_impact.currentIndex] = data[4];
+            m_impact.gyro_z[m_impact.currentIndex] = data[5];
+            uint32_t current_acceleration = (data[0] >> 16) * (data[0] >> 16) + (data[1] >> 16) * (data[1] >> 16) + (data[2] >> 16) * (data[2] >> 16);
+            if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
+                if (m_impact.previous_acceleration > current_acceleration){
+                    m_impact.impact = true;
+                    m_impact.writeIndex = (m_impact.currentIndex + m_motion.motion_freq_hz) % (2 * m_motion.motion_freq_hz + 1);
+                    m_impact.impactIndex = m_impact.writeIndex;
+                } else{
+                    m_impact.previous_acceleration = current_acceleration;
+                }
+            }
+            if (m_impact.impact){
+                data[0] = m_impact.acc_x[m_impact.writeIndex];
+                data[1] = m_impact.acc_y[m_impact.writeIndex];
+                data[2] = m_impact.acc_z[m_impact.writeIndex];
+                data[3] = m_impact.gyro_x[m_impact.writeIndex];
+                data[4] = m_impact.gyro_y[m_impact.writeIndex];
+                data[5] = m_impact.gyro_z[m_impact.writeIndex];
+                data[6] = 0;
+                data[7] = 0;
+                data[8] = 0;
+                evt = DRV_MOTION_EVT_RAW;
+                m_motion.evt_handler(&evt, data, sizeof(long) * 9);
+            }
+        } else if (valid_raw)
         {
             // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
             // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
@@ -307,9 +331,30 @@ static void mpulib_data_send(void)
     {
         if (inv_get_sensor_type_euler((long *)data, &accuracy, &timestamp))
         {
-            evt = DRV_MOTION_EVT_EULER;
-            // Roll, pitch and yaw
-            m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+            if (m_motion.impact_detection){
+                m_impact.roll[m_impact.currentIndex]  = data[0];
+                m_impact.pitch[m_impact.currentIndex] = data[1];
+                m_impact.yaw[m_impact.currentIndex]   = data[2];
+
+                if(m_impact.impact){
+                    data[0] = m_impact.roll[m_impact.writeIndex];
+                    data[1] = m_impact.pitch[m_impact.writeIndex];
+                    data[2] = m_impact.yaw[m_impact.writeIndex];
+                    evt = DRV_MOTION_EVT_EULER;
+                    // Roll, pitch and yaw
+                    m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+                }
+            } else if (m_sonification.enabled){
+                    drv_speaker_multi_tone_update(m_sonification.center_freq_hz + (data[0] / 65536) * 4, m_sonification.duration, m_sonification.volume);
+            } else{
+                evt = DRV_MOTION_EVT_EULER;
+                // Roll, pitch and yaw
+                m_motion.evt_handler(&evt, data, sizeof(long) * 3);
+            }
+        } else if(m_motion.impact_detection){
+            m_impact.roll[m_impact.currentIndex]  = 0;
+            m_impact.pitch[m_impact.currentIndex] = 0;
+            m_impact.yaw[m_impact.currentIndex]   = 0;
         }
     }
 
@@ -368,77 +413,15 @@ static void mpulib_data_send(void)
         }
     }
 
-    if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT)
-    {
-        bool valid_raw = false;
-        data[0] = 0;
-        if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT_ACCEL)
-        {
-            if (inv_get_sensor_type_accel((long *)&data[1], &accuracy, &timestamp))
-            {
-                // X, Y, and Z
-                valid_raw = true;
-            }
-            else
-            {
-                data[1] = 0;
-                data[2] = 0;
-                data[3] = 0;
+    if (m_motion.impact_detection){
+        if (m_impact.impact){
+            m_impact.writeIndex = (m_impact.writeIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
+            if (m_impact.writeIndex == m_impact.impactIndex){
+                        m_impact.impact = false;
+                        m_impact.previous_acceleration = 0;
             }
         }
-
-        if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT_GYRO)
-        {
-            if (inv_get_sensor_type_gyro((long *)&data[4], &accuracy, &timestamp))
-            {
-                // X, Y, and Z
-                valid_raw = true;
-            }
-            else
-            {
-                data[4] = 0;
-                data[5] = 0;
-                data[6] = 0;
-            }
-        }
-
-        m_impact.acc_x[m_impact.currentIndex] = data[1];
-        m_impact.acc_y[m_impact.currentIndex] = data[2];
-        m_impact.acc_z[m_impact.currentIndex] = data[3];
-        m_impact.gyro_x[m_impact.currentIndex] = data[4];
-        m_impact.gyro_y[m_impact.currentIndex] = data[5];
-        m_impact.gyro_z[m_impact.currentIndex] = data[6];
-
-        if (valid_raw)
-        {
-            uint32_t current_acceleration = (data[1] >> 16) * (data[1] >> 16) + (data[2] >> 16) * (data[2] >> 16) + (data[3] >> 16) * (data[3] >> 16);
-            if (!m_impact.impact && (current_acceleration >= (IMPACT_ACCELERATION_THRESHOLD * IMPACT_ACCELERATION_THRESHOLD))){
-                if (m_impact.previous_acceleration > current_acceleration){
-                    m_impact.impact = true;
-                    m_impact.writeIndex = (m_impact.currentIndex + 400 / 2) % 401;
-                    m_impact.impactIndex = m_impact.writeIndex;
-                } else{
-                    m_impact.previous_acceleration = current_acceleration;
-                }
-            }
-            if (m_impact.impact){
-                data[0] = MAX_IMPACT_SAMPLES;
-                data[1] = m_impact.acc_x[m_impact.writeIndex];
-                data[2] = m_impact.acc_y[m_impact.writeIndex];
-                data[3] = m_impact.acc_z[m_impact.writeIndex];
-                data[4] = m_impact.gyro_x[m_impact.writeIndex];
-                data[5] = m_impact.gyro_y[m_impact.writeIndex];
-                data[6] = m_impact.gyro_z[m_impact.writeIndex];
-                m_impact.writeIndex = (m_impact.writeIndex + 1) % 401;
-                evt = DRV_MOTION_EVT_IMPACT;
-                m_motion.evt_handler(&evt, data, sizeof(long) * 7);
-                if (m_impact.writeIndex == m_impact.impactIndex){
-                    m_impact.impact = false;
-                    m_impact.previous_acceleration = 0;
-                }
-            }
-        }
-        m_impact.currentIndex = (m_impact.currentIndex + 1) % 401;
+        m_impact.currentIndex = (m_impact.currentIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
     }
 }
 
@@ -826,6 +809,9 @@ static uint32_t dmp_init(void)
     err_code = mpu_set_dmp_state(1);
     RETURN_IF_ERROR(err_code);
 
+    err_code = drv_motion_disable_sonification();
+    RETURN_IF_ERROR(err_code);
+
     return NRF_SUCCESS;
 }
 
@@ -988,6 +974,8 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg)
     m_motion.compass_interval_ms   = p_cfg->compass_interval_ms;
     m_motion.motion_freq_hz        = p_cfg->motion_freq_hz;
     m_motion.wake_on_motion        = p_cfg->wake_on_motion;
+    m_motion.impact_detection      = p_cfg->impact_detection;
+    m_motion.impact_threshold      = p_cfg->impact_threshold;
 
     if (m_motion.running)
     {
@@ -1047,6 +1035,12 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     m_motion.compass_interval_ms   = COMPASS_READ_MS;
     m_motion.motion_freq_hz        = DEFAULT_MPU_HZ;
     m_motion.wake_on_motion        = 1;
+    m_motion.impact_detection      = 0;
+    m_motion.impact_threshold      = DEFAULT_IMP_THR;
+
+    m_impact.currentIndex          = 0;
+    m_impact.previous_acceleration = 0;
+    m_impact.impact                = 0;
 
     err_code = drv_acc_init(&lis_init_params);
     RETURN_IF_ERROR(err_code);
@@ -1072,6 +1066,33 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     RETURN_IF_ERROR(err_code);
 
     impact_struct_init();
+
+    return NRF_SUCCESS;
+}
+
+
+uint32_t drv_motion_enable_sonification(){
+    uint32_t err_code;
+    m_sonification.enabled        = true;
+    m_sonification.center_freq_hz = 1000;
+    m_sonification.duration       = 1000 / (m_motion.motion_freq_hz);
+    m_sonification.volume         = 100;
+
+    drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+    drv_speaker_multi_tone_update(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_disable_sonification(){
+    uint32_t err_code;
+    m_sonification.enabled        = false;
+    m_sonification.center_freq_hz = 1000;
+    m_sonification.duration       = 0;
+    m_sonification.volume         = 0;
+
+    drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+>>>>>>> impact_detection_1
 
     return NRF_SUCCESS;
 }

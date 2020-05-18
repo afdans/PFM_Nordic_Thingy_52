@@ -535,6 +535,55 @@ uint32_t drv_speaker_tone_start(uint16_t freq_hz, uint32_t duration_ms, uint8_t 
     return NRF_SUCCESS;
 }
 
+uint32_t drv_speaker_multi_tone_update(uint16_t freq_hz, uint32_t duration_ms, uint8_t volume)
+{
+    float period;
+    uint32_t num;
+    uint32_t loop;
+
+    if ((freq_hz < 100) || (volume > 100))
+    {
+        return NRF_ERROR_NOT_SUPPORTED;
+    }
+
+    if ((volume <= 0) || (duration_ms <= 0))
+    {
+        power_off_spkr(false);
+        (void)nrf_drv_pwm_stop(&m_speaker_pwm, true);
+
+        return NRF_SUCCESS;
+    }
+
+    NRF_LOG_DEBUG("drv_speaker_tone_start: %dHz - %dms - %d vol\r\n", freq_hz, duration_ms, volume);
+
+    period = 1.0f / freq_hz;
+    num  = (uint32_t)(period / 16.0e-6f);
+    loop = (uint32_t)((duration_ms / 1000.0f) / period);
+
+    for (uint32_t i = 0; i < num; i++)
+    {
+        ram_buf[i] = (uint16_t)(((float)volume * 125.0f * arm_sin_f32(2.0f * PI * freq_hz * i * 16.0e-6f - PI/2) / 100.0f) + 125.0f);
+    }
+
+    nrf_pwm_sequence_t const seq =
+    {
+        .values.p_common = ram_buf,
+        .length          = num,
+        .repeats         = 0,
+        .end_delay       = 0
+    };
+
+    power_spkr_on();
+
+    (void)nrf_drv_pwm_update_playback(&m_speaker_pwm, &seq, loop, NRF_DRV_PWM_FLAG_LOOP);
+
+    #if defined(THINGY_HW_v0_8_0)
+        nrf_gpio_pin_set(SPEAKER_VOLUME);
+    #endif
+
+    return NRF_SUCCESS;
+}
+
 
 uint32_t drv_speaker_init(drv_speaker_init_t *p_params)
 {

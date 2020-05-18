@@ -442,12 +442,16 @@ async function readMotionConfig() {
     const magnetCompensationInterval = value.getUint16(4, littleEndian);
     const motionProcessFrequency = value.getUint16(6, littleEndian);
     const wakeOnMotion = value.getUint8(8);
+    const impactDetection = value.getUint8(9);
+    const impactThreshold = value.getUint8(10);
     const formattedData = {
         stepCountInterval: stepCountInterval,
         tempCompensationInterval: tempCompensationInterval,
         magnetCompensationInterval: magnetCompensationInterval,
         motionProcessFrequency: motionProcessFrequency,
         wakeOnMotion: wakeOnMotion,
+        impactDetection: impactDetection,
+        impactThreshold: impactThreshold,
     };
     console.log("Motion config read successful");
     displayMotionConfig(formattedData);
@@ -509,7 +513,9 @@ async function writeMotionConfig(formattedData) {
     const magnetCompensationInterval = formattedData.magnetCompensationInterval;
     const motionProcessFrequency = formattedData.motionProcessFrequency;
     const wakeOnMotion = formattedData.wakeOnMotion;
-    var dataArray = new Uint8Array(9);
+    const impactDetection = formattedData.impactDetection;
+    const impactThreshold = formattedData.impactThreshold;
+    var dataArray = new Uint8Array(11);
     dataArray[0] = stepCountInterval & 0xFF;
     dataArray[1] = (stepCountInterval >> 8) & 0xFF;
     dataArray[2] = tempCompensationInterval & 0xFF;
@@ -519,6 +525,8 @@ async function writeMotionConfig(formattedData) {
     dataArray[6] = motionProcessFrequency & 0xFF;
     dataArray[7] = (motionProcessFrequency >> 8) & 0xFF;
     dataArray[8] = wakeOnMotion;
+    dataArray[9] = impactDetection;
+    dataArray[10] = impactThreshold;
     await motionConfigCharacteristic.writeValue(dataArray);
     console.log("Motion config write successful");
 
@@ -552,7 +560,9 @@ async function saveMotionConfig() {
         tempCompensationInterval: document.getElementById("tempCompensationInterval").value,
         magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
         motionProcessFrequency: document.getElementById("motionFrequency").value,
-        wakeOnMotion: document.getElementById("wakeOnMotion").checked,
+        wakeOnMotion: !document.getElementById("wakeOnMotion").checked,
+        impactDetection: document.getElementById("impactDetection").checked,
+        impactThreshold: document.getElementById("impactThreshold").value,
     };
     await writeMotionConfig(formattedData);
 }
@@ -599,7 +609,9 @@ function displayMotionConfig(formattedData) {
     document.getElementById("motionFrequency").value = formattedData.motionProcessFrequency;
     document.getElementById("tempCompensationInterval").value = formattedData.tempCompensationInterval;
     document.getElementById("magnetCompensationInterval").value = formattedData.magnetCompensationInterval;
-    document.getElementById("wakeOnMotion").checked = formattedData.wakeOnMotion;
+    document.getElementById("wakeOnMotion").checked = !formattedData.wakeOnMotion;
+    document.getElementById("impactDetection").checked = formattedData.impactDetection;
+    document.getElementById("impactThreshold").value = formattedData.impactThreshold;
 }
 
 /**

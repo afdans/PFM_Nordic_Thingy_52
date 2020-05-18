@@ -96,6 +96,10 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define MAX_IMPACT_SAMPLES                         (MAX_IMPACT_INTERVAL * MAX_MOTION_FREQUENCY + 1)
 #define IMPACT_ACCELERATION_THRESHOLD              3
 
+#define IMPACT_INTERVAL 2
+#define MPU_FREQ_MAX 200
+#define MAX_IMPACT_SAMPLES (MPU_FREQ_MAX * IMPACT_INTERVAL + 1)
+
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_GYRO       |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_COMPASS    |     \
@@ -166,6 +170,8 @@ typedef struct
     uint16_t compass_interval_ms;
     uint16_t motion_freq_hz;
     uint8_t  wake_on_motion;
+    uint8_t  impact_detection;
+    uint8_t  impact_threshold;
 }drv_motion_cfg_t;
 
 /**@brief Motion initialization struct.
@@ -218,6 +224,18 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg);
  * @retval NRF_SUCCESS.
  */
 uint32_t drv_motion_sleep_prepare(bool wakeup);
+
+/**@brief Function that enables sonification
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_enable_sonification();
+
+/**@brief Function that disables sonification
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_disable_sonification();
 #endif
 
 /**

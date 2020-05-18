@@ -70,6 +70,8 @@ static uint32_t m_motion_configuration_apply(ble_tms_config_t * p_config)
     motion_cfg.compass_interval_ms = p_config->compass_interval_ms;
     motion_cfg.motion_freq_hz      = p_config->motion_freq_hz;
     motion_cfg.wake_on_motion      = p_config->wake_on_motion;
+    motion_cfg.impact_detection    = p_config->impact_detection;
+    motion_cfg.impact_threshold    = p_config->impact_threshold;
 
     err_code = drv_motion_config(&motion_cfg);
     APP_ERROR_CHECK(err_code);

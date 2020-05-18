@@ -277,6 +277,79 @@ static uint32_t start_playback(nrf_drv_pwm_t const * const p_instance,
 }
 
 
+static uint32_t update_playback(nrf_drv_pwm_t const * const p_instance,
+                               pwm_control_block_t * p_cb,
+                               uint8_t               flags,
+                               nrf_pwm_task_t        starting_task)
+{
+    p_cb->state = NRF_DRV_STATE_POWERED_ON;
+    p_cb->flags = flags;
+
+    if (p_cb->handler)
+    {
+        // The notification about finished playback is by default enabled,
+        // but this can be suppressed.
+        // The notification that the peripheral has stopped is always enabled.
+        uint32_t int_mask = NRF_PWM_INT_LOOPSDONE_MASK |
+                            NRF_PWM_INT_STOPPED_MASK;
+
+        // The workaround for nRF52 Anomaly 109 "protects" DMA transfers by
+        // handling interrupts generated on SEQEND0 and SEQEND1 events (see
+        // 'nrf_drv_pwm_init'), hence these events must be always enabled
+        // to generate interrupts.
+        // However, the user handler is called for them only when requested
+        // (see 'irq_handler').
+#if defined(USE_DMA_ISSUE_WORKAROUND)
+        int_mask |= NRF_PWM_INT_SEQEND0_MASK | NRF_PWM_INT_SEQEND1_MASK;
+#else
+        if (flags & NRF_DRV_PWM_FLAG_SIGNAL_END_SEQ0)
+        {
+            int_mask |= NRF_PWM_INT_SEQEND0_MASK;
+        }
+        if (flags & NRF_DRV_PWM_FLAG_SIGNAL_END_SEQ1)
+        {
+            int_mask |= NRF_PWM_INT_SEQEND1_MASK;
+        }
+#endif
+        if (flags & NRF_DRV_PWM_FLAG_NO_EVT_FINISHED)
+        {
+            int_mask &= ~NRF_PWM_INT_LOOPSDONE_MASK;
+        }
+
+        nrf_pwm_int_set(p_instance->p_registers, int_mask);
+    }
+#if defined(USE_DMA_ISSUE_WORKAROUND)
+    else
+    {
+        nrf_pwm_int_set(p_instance->p_registers,
+            NRF_PWM_INT_SEQEND0_MASK | NRF_PWM_INT_SEQEND1_MASK);
+    }
+#endif
+
+    nrf_pwm_event_clear(p_instance->p_registers, NRF_PWM_EVENT_STOPPED);
+
+    if (flags & NRF_DRV_PWM_FLAG_START_VIA_TASK)
+    {
+        uint32_t starting_task_address =
+            nrf_pwm_task_address_get(p_instance->p_registers, starting_task);
+
+#if defined(USE_DMA_ISSUE_WORKAROUND)
+        // To "protect" the initial DMA transfer it is required to start
+        // the PWM by triggering the proper task from EGU interrupt handler,
+        // it is not safe to do it directly via PPI.
+        p_cb->starting_task_address = starting_task_address;
+        nrf_egu_int_enable(DMA_ISSUE_EGU,
+            nrf_egu_int_get(DMA_ISSUE_EGU, p_instance->drv_inst_idx));
+        return (uint32_t)nrf_egu_task_trigger_address_get(DMA_ISSUE_EGU,
+            p_instance->drv_inst_idx);
+#else
+        return starting_task_address;
+#endif
+    }
+    return 0;
+}
+
+
 uint32_t nrf_drv_pwm_simple_playback(nrf_drv_pwm_t const * const p_instance,
                                      nrf_pwm_sequence_t const * p_sequence,
                                      uint16_t                   playback_count,
@@ -363,6 +436,50 @@ uint32_t nrf_drv_pwm_complex_playback(nrf_drv_pwm_t const * const p_instance,
     NRF_LOG_HEXDUMP_DEBUG((uint8_t *)p_sequence_1->values.p_raw,
         p_sequence_1->length * sizeof(p_sequence_1->values));
     return start_playback(p_instance, p_cb, flags, NRF_PWM_TASK_SEQSTART0);
+}
+
+
+uint32_t nrf_drv_pwm_update_playback(nrf_drv_pwm_t const * const p_instance,
+                                           nrf_pwm_sequence_t const * p_sequence,
+                                           uint16_t                   playback_count,
+                                           uint32_t                   flags)
+{
+    pwm_control_block_t * p_cb  = &m_cb[p_instance->drv_inst_idx];
+    ASSERT(p_cb->state != NRF_DRV_STATE_UNINITIALIZED);
+    ASSERT(playback_count > 0);
+    ASSERT(nrf_drv_is_in_RAM(p_sequence->values.p_raw));
+
+    // To take advantage of the looping mechanism, we need to use both sequences
+    // (single sequence can be played back only once).
+    nrf_pwm_sequence_update_set(p_instance->p_registers, 0, p_sequence);
+    nrf_pwm_sequence_update_set(p_instance->p_registers, 1, p_sequence);
+    bool odd = (playback_count & 1);
+    nrf_pwm_loop_set(p_instance->p_registers,
+        (playback_count / 2) + (odd ? 1 : 0));
+
+    uint32_t shorts_mask;
+    if (flags & NRF_DRV_PWM_FLAG_STOP)
+    {
+        shorts_mask = NRF_PWM_SHORT_LOOPSDONE_STOP_MASK;
+    }
+    else if (flags & NRF_DRV_PWM_FLAG_LOOP)
+    {
+        shorts_mask = odd ? NRF_PWM_SHORT_LOOPSDONE_SEQSTART1_MASK
+                          : NRF_PWM_SHORT_LOOPSDONE_SEQSTART0_MASK;
+    }
+    else
+    {
+        shorts_mask = 0;
+    }
+    nrf_pwm_shorts_set(p_instance->p_registers, shorts_mask);
+
+    NRF_LOG_INFO("Function: %s, sequence length: %d.\r\n", (uint32_t)__func__,
+        p_sequence->length * sizeof(p_sequence->values));
+    NRF_LOG_DEBUG("Sequence data:\r\n");
+    NRF_LOG_HEXDUMP_DEBUG((uint8_t *)p_sequence->values.p_raw,
+        p_sequence->length * sizeof(p_sequence->values));
+    return update_playback(p_instance, p_cb, flags,
+        odd ? NRF_PWM_TASK_SEQSTART1 : NRF_PWM_TASK_SEQSTART0);
 }
 
 

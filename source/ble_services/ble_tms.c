@@ -296,7 +296,11 @@ static void on_authorize_req(ble_tms_t * p_tms, ble_evt_t * p_ble_evt)
                      (p_config->motion_freq_hz      < BLE_TMS_CONFIG_MPUF_MIN)          ||
                      (p_config->motion_freq_hz      > BLE_TMS_CONFIG_MPUF_MAX)          ||
                   /* (p_config->wake_on_motion      < BLE_TMS_CONFIG_WOM_MIN)           || */
-                     (p_config->wake_on_motion      > BLE_TMS_CONFIG_WOM_MAX) )
+                     (p_config->wake_on_motion      > BLE_TMS_CONFIG_WOM_MAX)           ||
+                  /* (p_config->impact_detection    < BLE_TMS_CONFIG_ID_MIN)            || */
+                     (p_config->impact_detection    > BLE_TMS_CONFIG_ID_MAX)            ||
+                     (p_config->impact_threshold    < BLE_TMS_CONFIG_IT_MIN)            ||
+                     (p_config->impact_threshold    > BLE_TMS_CONFIG_IT_MAX) )
                 {
                     valid_data = false;
                 }

@@ -92,6 +92,18 @@ uint32_t drv_speaker_init(drv_speaker_init_t * p_params);
  */
 uint32_t drv_speaker_tone_start(uint16_t freq_hz, uint32_t duration_ms, uint8_t volume);
 
+/**@brief Function for playing consecutive tones through the speaker.
+ *
+ * @param[in] freq_hz       Tone frequency (>100 Hz).
+ * @param[in] duration_ms   Tone length [ms].
+ * @param[in] volume        Speaker volume (0 to 100). 0 Volume will cause the function to return
+ * immediately with NRF_SUCCESS.
+ *
+ * @retval NRF_SUCCESS                  Completed successfully.
+ * @retval NRF_ERROR_NOT_SUPPORTED      Invalid parameters supplied.
+ */
+uint32_t drv_speaker_multi_tone_update(uint16_t freq_hz, uint32_t duration_ms, uint8_t volume);
+
 /**@brief Function for playing an 8-bit 8 kHz PCM encoded audio sample.
  *
  * @param[in] p_sound   Sound sample. PCM encoded, 8-bit.
