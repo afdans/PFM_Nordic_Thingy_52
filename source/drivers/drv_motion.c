@@ -136,6 +136,7 @@ static struct
 
 static struct
 {
+<<<<<<< HEAD
     int32_t  acc_x[MAX_IMPACT_SAMPLES];
     int32_t  acc_y[MAX_IMPACT_SAMPLES];
     int32_t  acc_z[MAX_IMPACT_SAMPLES];
@@ -150,6 +151,25 @@ static struct
     uint16_t writeIndex;
     int32_t  previous_acceleration;
     bool     impact;
+=======
+    int16_t                  acc_x[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_y[MAX_IMPACT_SAMPLES];
+    int16_t                  acc_z[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_x[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_y[MAX_IMPACT_SAMPLES];
+    int16_t                  gyro_z[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_x[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_y[MAX_IMPACT_SAMPLES];
+    int16_t                  mag_z[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_x[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_y[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_z[MAX_IMPACT_SAMPLES];
+    int32_t                  quat_w[MAX_IMPACT_SAMPLES];
+    int32_t                  roll[MAX_IMPACT_SAMPLES];
+    int32_t                  pitch[MAX_IMPACT_SAMPLES];
+    int32_t                  yaw[MAX_IMPACT_SAMPLES];
+    uint16_t                 index;
+>>>>>>> dcd79aaff7554a3eba8c5e91df20ae2517fca4ed
 } m_impact;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
@@ -255,6 +275,19 @@ static void mpulib_data_send(void)
 
         if (valid_raw)
         {
+            // muy hardcodeado, pero justo tengo que irme a WFH y quiero ver si funciona
+            // llegan los datos pero hay clipping limitado por el tamano de los arrays que me estoy inventando
+            // el rango es de -32 a 31
+            data[0] = m_impact.acc_x[m_impact.index] << 16;
+            data[1] = m_impact.acc_y[m_impact.index] << 16;
+            data[2] = m_impact.acc_z[m_impact.index] << 16;
+            data[3] = m_impact.gyro_x[m_impact.index] << 16;
+            data[4] = m_impact.gyro_y[m_impact.index] << 16;
+            data[5] = m_impact.gyro_z[m_impact.index] << 16;
+            data[6] = m_impact.mag_x[m_impact.index] << 16;
+            data[7] = m_impact.mag_y[m_impact.index] << 16;
+            data[8] = m_impact.mag_z[m_impact.index] << 16;
+            m_impact.index = (m_impact.index + 1) % MAX_IMPACT_SAMPLES;
             evt = DRV_MOTION_EVT_RAW;
             m_motion.evt_handler(&evt, data, sizeof(long) * 9);
         }

@@ -118,6 +118,7 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_GRAVITY_VECTOR |     \
                                                    DRV_MOTION_FEATURE_MASK_TAP            |     \
                                                    DRV_MOTION_FEATURE_MASK_ORIENTATION    |     \
+                                                   DRV_MOTION_FEATURE_MASK_IMPACT         |     \
                                                    DRV_MOTION_FEATURE_MASK_PEDOMETER)
 
 #define DRV_MOTION_FEATURE_GESTURE_MASK           (DRV_MOTION_FEATURE_MASK_TAP            |     \
@@ -130,6 +131,7 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_QUAT           |     \
                                                    DRV_MOTION_FEATURE_MASK_EULER          |     \
                                                    DRV_MOTION_FEATURE_MASK_ROT_MAT        |     \
+                                                   DRV_MOTION_FEATURE_MASK_IMPACT         |     \
                                                    DRV_MOTION_FEATURE_MASK_HEADING        |     \
                                                    DRV_MOTION_FEATURE_MASK_IMPACT_ACCEL   |     \
                                                    DRV_MOTION_FEATURE_MASK_IMPACT_GYRO    |     \
