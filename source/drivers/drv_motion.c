@@ -48,6 +48,8 @@
 #include "nrf_delay.h"
 #include "drv_ext_gpio.h"
 #include "nrf_drv_gpiote.h"
+#include "drv_speaker.h"
+#include "nrf_drv_pwm.h"
 
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
@@ -154,6 +156,14 @@ static struct
     int32_t  previous_acceleration;
     bool     impact;
 } m_impact;
+
+static struct
+{
+    uint8_t  volume;
+    uint16_t duration;
+    uint16_t center_freq_hz;
+    bool     enabled;
+} m_sonification;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
  */
@@ -320,7 +330,9 @@ static void mpulib_data_send(void)
                     // Roll, pitch and yaw
                     m_motion.evt_handler(&evt, data, sizeof(long) * 3);
                 }
-            }else{
+            } else if (m_sonification.enabled){
+                    drv_speaker_multi_tone_update(m_sonification.center_freq_hz + (data[0] / 65536) * 4, m_sonification.duration, m_sonification.volume);
+            } else{
                 evt = DRV_MOTION_EVT_EULER;
                 // Roll, pitch and yaw
                 m_motion.evt_handler(&evt, data, sizeof(long) * 3);
@@ -783,6 +795,9 @@ static uint32_t dmp_init(void)
     err_code = mpu_set_dmp_state(1);
     RETURN_IF_ERROR(err_code);
 
+    err_code = drv_motion_disable_sonification();
+    RETURN_IF_ERROR(err_code);
+
     return NRF_SUCCESS;
 }
 
@@ -1035,6 +1050,32 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
 
     err_code = app_timer_create(&m_pedo_timer_id, APP_TIMER_MODE_REPEATED, pedo_timeout_handler);
     RETURN_IF_ERROR(err_code);
+
+    return NRF_SUCCESS;
+}
+
+
+uint32_t drv_motion_enable_sonification(){
+    uint32_t err_code;
+    m_sonification.enabled        = true;
+    m_sonification.center_freq_hz = 1000;
+    m_sonification.duration       = 1000 / (m_motion.motion_freq_hz);
+    m_sonification.volume         = 100;
+
+    drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+    drv_speaker_multi_tone_update(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_disable_sonification(){
+    uint32_t err_code;
+    m_sonification.enabled        = false;
+    m_sonification.center_freq_hz = 1000;
+    m_sonification.duration       = 0;
+    m_sonification.volume         = 0;
+
+    drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
 
     return NRF_SUCCESS;
 }

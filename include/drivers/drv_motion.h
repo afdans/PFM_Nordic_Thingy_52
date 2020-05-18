@@ -207,6 +207,18 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg);
  * @retval NRF_SUCCESS.
  */
 uint32_t drv_motion_sleep_prepare(bool wakeup);
+
+/**@brief Function that enables sonification
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_enable_sonification();
+
+/**@brief Function that disables sonification
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_disable_sonification();
 #endif
 
 /** @} */
