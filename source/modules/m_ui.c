@@ -48,6 +48,8 @@
 #include "nrf_drv_gpiote.h"
 #include "app_scheduler.h"
 #include "app_timer.h"
+#include "drv_speaker.h"
+#include "drv_motion.h"
 
 #define  NRF_LOG_MODULE_NAME "m_ui          "
 #include "nrf_log.h"
@@ -58,6 +60,9 @@ static ble_uis_t           m_uis;
 static const ble_uis_led_t m_default_config_connected    = UI_CONFIG_DEFAULT_CONNECTED;
 static const ble_uis_led_t m_default_config_disconnected = UI_CONFIG_DEFAULT_DISCONNECTED;
 static const ble_uis_led_t m_default_config_error        = UI_CONFIG_DEFAULT_ERROR;
+
+static uint8_t menu_index;
+static uint8_t pressed;
 
 /**@brief Treats r, g, b integer values as boolean and returns corresponing color mix.
  *
@@ -366,6 +371,39 @@ static void button_evt_handler(uint8_t pin_no, uint8_t button_action)
             {
                 APP_ERROR_CHECK(err_code);
             }
+            //m_ui_led_set(255, 0, 0);
+            // Crear const o defines para los colores por ejemplo
+            // RED_R = 255, RED_G = 0, RED_B = 0
+            // CASE1_R = RED_R, CASE1_G = RED_G, CASE1_B = RED_B...
+            pressed++;
+            pressed %= 2; // Porque hay un evento cuando se presiona y otro cuando se suelta, por eso iba de dos en dos yo
+            if(pressed){
+                menu_index++;
+                menu_index %= 4; // Crear un define en vez de hardcoding 
+                switch(menu_index){
+                    case 1:
+                        drv_motion_disable_sonification();
+                        //drv_speaker_tone_start(1000, 100, 100);
+                        m_ui_led_set(255, 0 , 0);
+                        break;
+                    case 2:
+                        //drv_speaker_tone_start(1250, 5, 100);
+                        drv_motion_enable_sonification();
+                        //Sonification
+                        m_ui_led_set(125, 0 , 125);
+                        break;
+                    case 3:
+                        drv_motion_disable_sonification();
+                        //drv_speaker_tone_start(750, 100, 100);
+                        m_ui_led_set(0, 125 , 125);
+                        break;
+                    default:
+                        // Encontrar el color verde de conectado
+                        drv_motion_disable_sonification();
+                        //drv_speaker_tone_start(1500, 0, 0);
+                        m_ui_led_set(0, 255, 0);
+                }
+            }
         }
     }
 }
@@ -427,6 +465,9 @@ static ret_code_t button_init(void)
 
     err_code = app_button_init(&button_cfg, 1, APP_TIMER_TICKS(50));
     RETURN_IF_ERROR(err_code);
+
+    menu_index = 0;
+    pressed = 0;
 
     return app_button_enable();
 }
