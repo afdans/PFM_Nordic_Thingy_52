@@ -724,4 +724,9 @@ uint32_t ble_advertising_restart_without_whitelist(void)
     return NRF_SUCCESS;
 }
 
+uint32_t ble_slow_advertising_set(bool state){
+    m_adv_modes_config.ble_adv_slow_enabled = state;
+    return NRF_SUCCESS;
+}
+
 #endif // NRF_MODULE_ENABLED(BLE_ADVERTISING)

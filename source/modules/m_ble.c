@@ -615,6 +615,7 @@ static uint32_t advertising_init(void)
     options.ble_adv_fast_enabled  = true;
     options.ble_adv_fast_interval = m_ble_config->adv_params.interval;
     options.ble_adv_fast_timeout  = m_ble_config->adv_params.timeout;
+    // options.ble_adv_slow_enabled  = true;
     
     // Build scan response data struct to pass into @ref ble_advertising_init.
     ble_advdata_t scan_response_data;

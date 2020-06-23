@@ -70,6 +70,9 @@
 extern "C" {
 #endif
 
+#define SLEEP_MODE_DISABLE true
+#define SLEEP_MODE_ENABLE  false
+
 
 /**@brief Advertising modes.
 */
@@ -260,6 +263,14 @@ uint32_t ble_advertising_restart_without_whitelist(void);
 
 /** @} */
 
+/**
+ * @brief Function for changing the slow advertisment parameter.
+ *
+ * @details This function is used to disable sleep mode for applications
+ *          that don't require Bluetooth.
+ * @retval @ref NRF_SUCCESS
+ */
+uint32_t ble_slow_advertising_set(bool);
 
 #ifdef __cplusplus
 }
