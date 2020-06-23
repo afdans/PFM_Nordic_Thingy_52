@@ -371,6 +371,7 @@ static void button_evt_handler(uint8_t pin_no, uint8_t button_action)
             {
                 APP_ERROR_CHECK(err_code);
             }
+        } else {
             //m_ui_led_set(255, 0, 0);
             // Crear const o defines para los colores por ejemplo
             // RED_R = 255, RED_G = 0, RED_B = 0
@@ -379,29 +380,38 @@ static void button_evt_handler(uint8_t pin_no, uint8_t button_action)
             pressed %= 2; // Porque hay un evento cuando se presiona y otro cuando se suelta, por eso iba de dos en dos yo
             if(pressed){
                 menu_index++;
-                menu_index %= 4; // Crear un define en vez de hardcoding 
+                menu_index %= 7; // Crear un define en vez de hardcoding
                 switch(menu_index){
                     case 1:
-                        drv_motion_disable_sonification();
-                        //drv_speaker_tone_start(1000, 100, 100);
+                        drv_motion_enable_sonification(SONIFICATION_CHANNEL_RAW_ACCEL_Y);
+                        drv_motion_sonification_set_volume(20);
                         m_ui_led_set(255, 0 , 0);
                         break;
                     case 2:
-                        //drv_speaker_tone_start(1250, 5, 100);
-                        drv_motion_enable_sonification();
-                        //Sonification
-                        m_ui_led_set(125, 0 , 125);
+                        drv_motion_sonification_set_sensitivity(1);
+                        m_ui_led_set(255 ,255, 255);
                         break;
                     case 3:
-                        drv_motion_disable_sonification();
-                        //drv_speaker_tone_start(750, 100, 100);
-                        m_ui_led_set(0, 125 , 125);
+                        drv_motion_sonification_set_sensitivity(0);
+                        drv_motion_sonification_set_volume(60);
+                        m_ui_led_set(0, 255, 0);
+                        break;
+                    case 4:
+                        drv_motion_sonification_set_sensitivity(1);
+                        m_ui_led_set(0, 255, 255);
+                        break;
+                    case 5:
+                        drv_motion_sonification_set_channel(SONIFICATION_CHANNEL_RAW_GYRO_X);
+                        drv_motion_sonification_set_sensitivity(0);
+                        m_ui_led_set(255, 0, 255);
+                        break;
+                    case 6:
+                        drv_motion_sonification_set_channel(SONIFICATION_CHANNEL_RAW_GYRO_X);
+                        m_ui_led_set(255, 50 , 0);
                         break;
                     default:
-                        // Encontrar el color verde de conectado
                         drv_motion_disable_sonification();
-                        //drv_speaker_tone_start(1500, 0, 0);
-                        m_ui_led_set(0, 255, 0);
+                        m_ui_led_set(0, 0, 255);
                 }
             }
         }
