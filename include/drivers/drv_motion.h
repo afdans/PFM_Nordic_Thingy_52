@@ -70,7 +70,28 @@ typedef enum
     DRV_MOTION_FEATURE_WAKE_ON_MOTION,
     DRV_MOTION_FEATURE_IMPACT_ACCEL,
     DRV_MOTION_FEATURE_IMPACT_GYRO,
+    DRV_MOTION_FEATURE_SONIFICATION,
 }drv_motion_feature_t;
+
+typedef enum
+{
+   SONIFICATION_CHANNEL_ROLL,
+   SONIFICATION_CHANNEL_PITCH,
+   SONIFICATION_CHANNEL_YAW,
+   SONIFICATION_CHANNEL_RAW_ACCEL_X,
+   SONIFICATION_CHANNEL_RAW_ACCEL_Y,
+   SONIFICATION_CHANNEL_RAW_ACCEL_Z,
+   SONIFICATION_CHANNEL_RAW_GYRO_X,
+   SONIFICATION_CHANNEL_RAW_GYRO_Y,
+   SONIFICATION_CHANNEL_RAW_GYRO_Z,
+}sonification_channel_t;
+
+typedef enum
+{
+   SONIFICATION_SENSOR_EULER,
+   SONIFICATION_SENSOR_RAW_ACCEL,
+   SONIFICATION_SENSOR_RAW_GYRO,
+}sonification_sensor_t;
 
 typedef uint32_t drv_motion_feature_mask_t;
 
@@ -90,10 +111,18 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define DRV_MOTION_FEATURE_MASK_IMPACT            ((1UL << DRV_MOTION_FEATURE_IMPACT_ACCEL) | (1UL << DRV_MOTION_FEATURE_IMPACT_GYRO))
 #define DRV_MOTION_FEATURE_MASK_IMPACT_ACCEL      (1UL << DRV_MOTION_FEATURE_IMPACT_ACCEL)
 #define DRV_MOTION_FEATURE_MASK_IMPACT_GYRO       (1UL << DRV_MOTION_FEATURE_IMPACT_GYRO)
+#define DRV_MOTION_FEATURE_MASK_SONIFICATION      (1UL << DRV_MOTION_FEATURE_SONIFICATION)
 
 #define IMPACT_INTERVAL 2
 #define MPU_FREQ_MAX 200
 #define MAX_IMPACT_SAMPLES (MPU_FREQ_MAX * IMPACT_INTERVAL + 1)
+
+#define BIT_OFFSET_EULER 16
+#define BIT_OFFSET_RAW 16
+#define NUMERICAL_OFFSET_EULER (1 << BIT_OFFSET_EULER)
+#define NUMERICAL_OFFSET_RAW (1 << BIT_OFFSET_RAW)
+
+#define SONIFICATION_FREQ_CENTER 1000
 
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_GYRO       |     \
@@ -108,7 +137,8 @@ typedef uint32_t drv_motion_feature_mask_t;
                                                    DRV_MOTION_FEATURE_MASK_PEDOMETER      |     \
                                                    DRV_MOTION_FEATURE_MASK_IMPACT_ACCEL   |     \
                                                    DRV_MOTION_FEATURE_MASK_IMPACT_GYRO    |     \
-                                                   DRV_MOTION_FEATURE_MASK_WAKE_ON_MOTION)
+                                                   DRV_MOTION_FEATURE_MASK_WAKE_ON_MOTION |     \
+                                                   DRV_MOTION_FEATURE_MASK_SONIFICATION)
 
 #define DRV_MOTION_FEATURE_DMP_MASK               (DRV_MOTION_FEATURE_MASK_QUAT           |     \
                                                    DRV_MOTION_FEATURE_MASK_EULER          |     \
@@ -222,21 +252,30 @@ uint32_t drv_motion_sleep_prepare(bool wakeup);
 
 /**@brief Function that enables sonification
  *
+ * @param[in] channel   Channel used to determine frequency in sonification.
+ *
  * @retval NRF_SUCCESS.
  */
-uint32_t drv_motion_enable_sonification();
+uint32_t drv_motion_enable_sonification(sonification_channel_t channel);
 
 /**@brief Function that disables sonification
  *
  * @retval NRF_SUCCESS.
  */
 uint32_t drv_motion_disable_sonification();
+
+/**@brief Function that sets sonification's channel
+ *
+ * @param[in] channel   Channel used to determine frequency in sonification.
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_sonification_set_channel(sonification_channel_t channel);
+
+uint32_t drv_motion_sonification_set_sensitivity(bool high);
+
+uint32_t drv_motion_sonification_set_volume(uint16_t volume);
+
 #endif
-
-/**
- * Initialize the struct of arrays to check if it works
-*/
-void impact_struct_init(void);
-
 
 /** @} */

@@ -50,6 +50,7 @@
 #include "nrf_drv_gpiote.h"
 #include "drv_speaker.h"
 #include "nrf_drv_pwm.h"
+#include "ble_advertising.h"
 
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
@@ -159,10 +160,13 @@ static struct
 
 static struct
 {
-    uint8_t  volume;
-    uint16_t duration;
-    uint16_t center_freq_hz;
-    bool     enabled;
+    uint8_t                volume;
+    uint16_t               duration;
+    uint16_t               center_freq_hz;
+    bool                   enabled;
+    bool                   sensitivity;
+    sonification_channel_t channel;
+    sonification_sensor_t  sensor;
 } m_sonification;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
@@ -217,6 +221,114 @@ static void mpulib_data_send(void)
     int8_t           accuracy;
     int32_t          data[9];
     drv_motion_evt_t evt;
+
+    if (m_motion.features & DRV_MOTION_FEATURE_MASK_SONIFICATION){
+        int32_t frequency_offset;
+        bool    valid_data = false;
+        int16_t sensitivity;
+
+        switch (m_sonification.sensor){
+            case SONIFICATION_SENSOR_EULER:
+                if (inv_get_sensor_type_euler((long *)data, &accuracy, &timestamp)){
+                    valid_data = true;
+                }
+                if(m_sonification.sensitivity){
+                    sensitivity = 4;
+                }else{
+                    sensitivity = 1;
+                }
+                break;
+            case SONIFICATION_SENSOR_RAW_ACCEL:
+                if (inv_get_sensor_type_accel((long *)&data[0], &accuracy, &timestamp)){
+                    valid_data = true;
+                }
+                if(m_sonification.sensitivity){
+                    sensitivity = 30;
+                }else{
+                    sensitivity = 10;
+                }
+                break;
+            case SONIFICATION_SENSOR_RAW_GYRO:
+                if (inv_get_sensor_type_gyro((long *)&data[0], &accuracy, &timestamp)){
+                    valid_data = true;
+                }
+                if(m_sonification.sensitivity){
+                    sensitivity = 50;
+                }else{
+                    sensitivity = 10;
+                }
+                break;
+        }
+
+        if (valid_data){
+            switch(m_sonification.channel){
+                case SONIFICATION_CHANNEL_ROLL:
+                    frequency_offset = data[0] * sensitivity / NUMERICAL_OFFSET_EULER;
+                    break;
+                case SONIFICATION_CHANNEL_PITCH:
+                    frequency_offset = data[1] * sensitivity / NUMERICAL_OFFSET_EULER;
+                    break;
+                case SONIFICATION_CHANNEL_YAW:
+                    frequency_offset = data[2] * sensitivity / NUMERICAL_OFFSET_EULER;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_ACCEL_X:
+                    frequency_offset = (int16_t)((data[0] * sensitivity) >> 6);
+                    frequency_offset = frequency_offset >> 10;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_ACCEL_Y:
+                    frequency_offset = (int16_t)((data[1] * sensitivity) >> 6);
+                    frequency_offset = frequency_offset >> 10;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_ACCEL_Z:
+                    frequency_offset = (int16_t)((data[2] * sensitivity) >> 6);
+                    frequency_offset = frequency_offset >> 10;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_GYRO_X:
+                    frequency_offset = (int16_t)((data[0] * sensitivity) >> 11);
+                    frequency_offset = frequency_offset >> 12;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_GYRO_Y:
+                    frequency_offset = (int16_t)((data[1] * sensitivity) >> 11);
+                    frequency_offset = frequency_offset / 2048;
+                    break;
+                case SONIFICATION_CHANNEL_RAW_GYRO_Z:
+                    frequency_offset = (int16_t)((data[2] * sensitivity) >> 11);
+                    frequency_offset = frequency_offset >> 12;
+                    break;
+                default:
+                    frequency_offset = 0;
+                    break;
+            }
+
+            switch (m_sonification.sensor){
+                case SONIFICATION_SENSOR_EULER:
+                    if (!m_sonification.sensitivity){
+                        frequency_offset = frequency_offset * 4;
+                    }
+                    break;
+                case SONIFICATION_SENSOR_RAW_ACCEL:
+                    if (m_sonification.sensitivity){
+                        frequency_offset = frequency_offset * 4;
+                    }else{
+                        frequency_offset = frequency_offset * 12;
+                    }
+                    break;
+                case SONIFICATION_SENSOR_RAW_GYRO:
+                    if (m_sonification.sensitivity){
+                        frequency_offset = frequency_offset * 4;
+                    }else{
+                        frequency_offset = frequency_offset * 20;
+                    }
+                    break;
+            }
+
+            if (frequency_offset <= -900){
+                frequency_offset = -899;
+            }
+            NRF_LOG_DEBUG("Offset is: %d\r\n", frequency_offset);
+            drv_speaker_multi_tone_update(m_sonification.center_freq_hz + frequency_offset, m_sonification.duration, m_sonification.volume);
+        }
+    }
 
     if (m_motion.features & DRV_MOTION_FEATURE_MASK_RAW)
     {
@@ -330,8 +442,6 @@ static void mpulib_data_send(void)
                     // Roll, pitch and yaw
                     m_motion.evt_handler(&evt, data, sizeof(long) * 3);
                 }
-            } else if (m_sonification.enabled){
-                    drv_speaker_multi_tone_update(m_sonification.center_freq_hz + (data[0] / 65536) * 4, m_sonification.duration, m_sonification.volume);
             } else{
                 evt = DRV_MOTION_EVT_EULER;
                 // Roll, pitch and yaw
@@ -795,9 +905,6 @@ static uint32_t dmp_init(void)
     err_code = mpu_set_dmp_state(1);
     RETURN_IF_ERROR(err_code);
 
-    err_code = drv_motion_disable_sonification();
-    RETURN_IF_ERROR(err_code);
-
     return NRF_SUCCESS;
 }
 
@@ -1055,12 +1162,19 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
 }
 
 
-uint32_t drv_motion_enable_sonification(){
-    uint32_t err_code;
-    m_sonification.enabled        = true;
-    m_sonification.center_freq_hz = 1000;
+uint32_t drv_motion_enable_sonification(sonification_channel_t channel){
+
+    drv_motion_enable(DRV_MOTION_FEATURE_MASK_SONIFICATION);
+
+    drv_motion_sonification_set_channel(channel);
+
+    ble_slow_advertising_set(SLEEP_MODE_DISABLE);
+
+    m_sonification.center_freq_hz = SONIFICATION_FREQ_CENTER;
     m_sonification.duration       = 1000 / (m_motion.motion_freq_hz);
-    m_sonification.volume         = 100;
+
+    drv_motion_sonification_set_volume(100);
+    drv_motion_sonification_set_sensitivity(0);
 
     drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
     drv_speaker_multi_tone_update(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
@@ -1070,12 +1184,51 @@ uint32_t drv_motion_enable_sonification(){
 
 uint32_t drv_motion_disable_sonification(){
     uint32_t err_code;
-    m_sonification.enabled        = false;
-    m_sonification.center_freq_hz = 1000;
-    m_sonification.duration       = 0;
-    m_sonification.volume         = 0;
 
-    drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
+    drv_motion_disable(DRV_MOTION_FEATURE_MASK_SONIFICATION);
+
+    drv_speaker_tone_start(m_sonification.center_freq_hz, 0, 0);
+
+    ble_slow_advertising_set(SLEEP_MODE_ENABLE);
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_sonification_set_channel(sonification_channel_t channel){
+    m_sonification.channel = channel;
+
+    switch(channel){
+        case SONIFICATION_CHANNEL_ROLL:
+        case SONIFICATION_CHANNEL_PITCH:
+        case SONIFICATION_CHANNEL_YAW:
+            m_sonification.sensor = SONIFICATION_SENSOR_EULER;
+            break;
+        case SONIFICATION_CHANNEL_RAW_ACCEL_X:
+        case SONIFICATION_CHANNEL_RAW_ACCEL_Y:
+        case SONIFICATION_CHANNEL_RAW_ACCEL_Z:
+            m_sonification.sensor = SONIFICATION_SENSOR_RAW_ACCEL;
+            break;
+        case SONIFICATION_CHANNEL_RAW_GYRO_X:
+        case SONIFICATION_CHANNEL_RAW_GYRO_Y:
+        case SONIFICATION_CHANNEL_RAW_GYRO_Z:
+            m_sonification.sensor = SONIFICATION_SENSOR_RAW_GYRO;
+            break;
+        default:
+            //Do nothing
+            break;
+    }
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_sonification_set_sensitivity(bool high){
+    m_sonification.sensitivity = high;
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_sonification_set_volume(uint16_t volume){
+    m_sonification.volume = volume;
 
     return NRF_SUCCESS;
 }
