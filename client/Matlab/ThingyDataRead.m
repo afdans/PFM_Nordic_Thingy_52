@@ -1,21 +1,31 @@
 clear all;
 close all;
-clc;
+%clc;
 %%
 addpath('C:\xampp\htdocs\PFM_Nordic_Thingy_52\client\datafiles');
 
-motionValues = importdata('dataMotion.csv');
-environmentValues = importdata('dataEnvironment.csv');
+axis = 'Y';
+volume = '10';
+sign   = 'N';
+
+filename = strcat('Acc', axis, 'Vol', volume, sign, '.csv');
+
+motionValues = importdata(filename);
 motionData = motionValues.data;
-environmentData = environmentValues.data;
 
 %%
 
-Acc_X = motionData(1, :);
-Acc_Y = motionData(2, :);
-Acc_Z = motionData(3, :);
-Motion_T = datetime(motionData(end, :) / 1000, 'convertFrom', 'posixTime');
+Acc(:, 1) = motionData(1, :).';
+Acc(:, 2) = motionData(2, :).';
+Acc(:, 3) = motionData(3, :).';
+
+filename = strcat('Vol_', volume, '_Acc_', axis, '_', sign, '.mat');
+save(filename, 'Acc');
+
 
 %%
-figure();
-plot(Motion_T, sqrt(Acc_X .^ 2 + Acc_Y .^ 2 + Acc_Z .^ 2));
+
+media = mean(Acc)
+desviacion = std(Acc)
+
+dataDistribution(Acc)
