@@ -50,6 +50,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <mltypes.h>
 #include "nrf_drv_twi.h"
 
 /**@brief Motion features.
@@ -121,6 +122,12 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define BIT_OFFSET_RAW 16
 #define NUMERICAL_OFFSET_EULER (1 << BIT_OFFSET_EULER)
 #define NUMERICAL_OFFSET_RAW (1 << BIT_OFFSET_RAW)
+
+#define ACC_SIZE 3
+#define GYRO_SIZE 3
+#define EULER_SIZE 6
+#define IMPACT_SIZE (EULER_SIZE + GYRO_SIZE + ACC_SIZE)
+#define MAX_QUEUE_SIZE (IMPACT_SIZE * MAX_IMPACT_SAMPLES)
 
 #define SONIFICATION_FREQ_CENTER 1000
 
@@ -195,7 +202,6 @@ typedef struct
     uint16_t compass_interval_ms;
     uint16_t motion_freq_hz;
     uint8_t  wake_on_motion;
-    uint8_t  impact_detection;
     uint8_t  impact_threshold;
 }drv_motion_cfg_t;
 
@@ -272,9 +278,80 @@ uint32_t drv_motion_disable_sonification();
  */
 uint32_t drv_motion_sonification_set_channel(sonification_channel_t channel);
 
+/**@brief Function that sets sonification's sensitivity
+ *
+ * @param[in] high   Bool that determines if sensitivity is low or high.
+ *
+ * @retval NRF_SUCCESS.
+ */
 uint32_t drv_motion_sonification_set_sensitivity(bool high);
 
+/**@brief Function that sets sonification's volume
+ *
+ * @param[in] volume   Speaker's volume.
+ *
+ * @retval NRF_SUCCESS.
+ */
 uint32_t drv_motion_sonification_set_volume(uint16_t volume);
+
+/**@brief Function that reads accelerometer and writes the result in circular array
+ *
+ * @param[in] accuracy   Speaker's volume.
+ * @param[in] timestamp   Speaker's volume.
+ *
+ * @retval current_acceleration.
+ */
+float drv_motion_read_impact_acceleration(int8_t *accuracy, inv_time_t *timestamp);
+
+/**@brief Function that reads gyroscopes and writes the result in circular array
+ *
+ * @param[in] accuracy   Speaker's volume.
+ * @param[in] timestamp   Speaker's volume.
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_read_impact_gyroscope(int8_t *accuracy, inv_time_t *timestamp);
+
+/**@brief Function that reads euler angles and writes the result in circular array
+ *
+ * @param[in] accuracy   Speaker's volume.
+ * @param[in] timestamp   Speaker's volume.
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_read_impact_euler(int8_t *accuracy, inv_time_t *timestamp);
+
+/**@brief Function that adds a value to the impact data queue
+ *
+ * @param[in] value   value to be added to the queue.
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_queue_add(int16_t value);
+
+/**@brief Function that is used to add the acceleration values to the queue
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_queue_add_acceleration();
+
+/**@brief Function that is used to add the gyroscope values to the queue
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_queue_add_gyroscope();
+
+/**@brief Function that is used to add the euler angles to the queue
+ *
+ * @retval NRF_SUCCESS.
+ */
+uint32_t drv_motion_queue_add_euler();
+
+/**@brief Function that returns the front value from the queue
+ *
+ * @retval data.
+ */
+int16_t drv_motion_dequeue();
 
 #endif
 

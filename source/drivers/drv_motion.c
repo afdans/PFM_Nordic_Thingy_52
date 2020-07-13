@@ -64,11 +64,16 @@
 #define TEMP_READ_MS     (500UL) ///< Default temperature period [ms].
 #define COMPASS_READ_MS  (500UL) ///< Default compass (magnetometer) period [ms].
 #define DEFAULT_MPU_HZ    (10UL) ///< Default motion processing unit period [ms].
-#define DEFAULT_IMP_THR    (3UL) ///< Default motion processing unit period [ms].
+#define DEFAULT_IMP_THR    (4UL) ///< Default motion processing unit period [ms].
 #define NUM_AXES             (3) ///< Number of principal axes for each sensor type.
 #define  NRF_LOG_MODULE_NAME "drv_motion    "
 #include "nrf_log.h"
 #include "macros_common.h"
+
+#define RAW_Q_FORMAT_INTEGER_BITS 65536     // Number of bits used for raw data.
+#define RAW_Q_FORMAT_ACC_INTEGER_BITS 6     // Number of bits used for integer part of raw data.
+#define RAW_Q_FORMAT_GYR_INTEGER_BITS 11    // Number of bits used for integer part of raw data.
+#define RAW_Q_FORMAT_CMP_INTEGER_BITS 12    // Number of bits used for integer part of raw data.
 
 #define RETURN_IF_INV_ERROR(PARAM)                                                                \
         if ((PARAM) != INV_SUCCESS)                                                               \
@@ -142,21 +147,29 @@ static struct
 
 static struct
 {
-    int32_t  acc_x[MAX_IMPACT_SAMPLES];
-    int32_t  acc_y[MAX_IMPACT_SAMPLES];
-    int32_t  acc_z[MAX_IMPACT_SAMPLES];
-    int32_t  gyro_x[MAX_IMPACT_SAMPLES];
-    int32_t  gyro_y[MAX_IMPACT_SAMPLES];
-    int32_t  gyro_z[MAX_IMPACT_SAMPLES];
+    int16_t  acc_x[MAX_IMPACT_SAMPLES];
+    int16_t  acc_y[MAX_IMPACT_SAMPLES];
+    int16_t  acc_z[MAX_IMPACT_SAMPLES];
+    int16_t  gyro_x[MAX_IMPACT_SAMPLES];
+    int16_t  gyro_y[MAX_IMPACT_SAMPLES];
+    int16_t  gyro_z[MAX_IMPACT_SAMPLES];
     int32_t  roll[MAX_IMPACT_SAMPLES];
     int32_t  pitch[MAX_IMPACT_SAMPLES];
     int32_t  yaw[MAX_IMPACT_SAMPLES];
     uint16_t currentIndex;
     uint16_t impactIndex;
     uint16_t writeIndex;
+    uint16_t type;
     int32_t  previous_acceleration;
     bool     impact;
 } m_impact;
+
+static struct{
+    int16_t entryIndex;
+    int16_t exitIndex;
+    int16_t size;
+    int16_t data[MAX_QUEUE_SIZE];
+} m_impact_queue;
 
 static struct
 {
@@ -394,37 +407,7 @@ static void mpulib_data_send(void)
             }
         }
 
-        if (m_motion.impact_detection){
-            m_impact.acc_x[m_impact.currentIndex]  = data[0];
-            m_impact.acc_y[m_impact.currentIndex]  = data[1];
-            m_impact.acc_z[m_impact.currentIndex]  = data[2];
-            m_impact.gyro_x[m_impact.currentIndex] = data[3];
-            m_impact.gyro_y[m_impact.currentIndex] = data[4];
-            m_impact.gyro_z[m_impact.currentIndex] = data[5];
-            uint32_t current_acceleration = (data[0] >> 16) * (data[0] >> 16) + (data[1] >> 16) * (data[1] >> 16) + (data[2] >> 16) * (data[2] >> 16);
-            if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
-                if (m_impact.previous_acceleration > current_acceleration){
-                    m_impact.impact = true;
-                    m_impact.writeIndex = (m_impact.currentIndex + m_motion.motion_freq_hz) % (2 * m_motion.motion_freq_hz + 1);
-                    m_impact.impactIndex = m_impact.writeIndex;
-                } else{
-                    m_impact.previous_acceleration = current_acceleration;
-                }
-            }
-            if (m_impact.impact){
-                data[0] = m_impact.acc_x[m_impact.writeIndex];
-                data[1] = m_impact.acc_y[m_impact.writeIndex];
-                data[2] = m_impact.acc_z[m_impact.writeIndex];
-                data[3] = m_impact.gyro_x[m_impact.writeIndex];
-                data[4] = m_impact.gyro_y[m_impact.writeIndex];
-                data[5] = m_impact.gyro_z[m_impact.writeIndex];
-                data[6] = 0;
-                data[7] = 0;
-                data[8] = 0;
-                evt = DRV_MOTION_EVT_RAW;
-                m_motion.evt_handler(&evt, data, sizeof(long) * 9);
-            }
-        } else if (valid_raw)
+        if (valid_raw)
         {
             evt = DRV_MOTION_EVT_RAW;
             m_motion.evt_handler(&evt, data, sizeof(long) * 9);
@@ -445,28 +428,9 @@ static void mpulib_data_send(void)
     {
         if (inv_get_sensor_type_euler((long *)data, &accuracy, &timestamp))
         {
-            if (m_motion.impact_detection){
-                m_impact.roll[m_impact.currentIndex]  = data[0];
-                m_impact.pitch[m_impact.currentIndex] = data[1];
-                m_impact.yaw[m_impact.currentIndex]   = data[2];
-
-                if(m_impact.impact){
-                    data[0] = m_impact.roll[m_impact.writeIndex];
-                    data[1] = m_impact.pitch[m_impact.writeIndex];
-                    data[2] = m_impact.yaw[m_impact.writeIndex];
-                    evt = DRV_MOTION_EVT_EULER;
-                    // Roll, pitch and yaw
-                    m_motion.evt_handler(&evt, data, sizeof(long) * 3);
-                }
-            } else{
-                evt = DRV_MOTION_EVT_EULER;
-                // Roll, pitch and yaw
-                m_motion.evt_handler(&evt, data, sizeof(long) * 3);
-            }
-        } else if(m_motion.impact_detection){
-            m_impact.roll[m_impact.currentIndex]  = 0;
-            m_impact.pitch[m_impact.currentIndex] = 0;
-            m_impact.yaw[m_impact.currentIndex]   = 0;
+            evt = DRV_MOTION_EVT_EULER;
+            // Roll, pitch and yaw
+            m_motion.evt_handler(&evt, data, sizeof(long) * 3);
         }
     }
 
@@ -525,13 +489,48 @@ static void mpulib_data_send(void)
         }
     }
 
-    if (m_motion.impact_detection){
+    if (m_motion.features & DRV_MOTION_FEATURE_MASK_IMPACT){
+
+        // Accelerometer
+        float current_acceleration = drv_motion_read_impact_acceleration(&accuracy, &timestamp);
+        // Gyroscope
+        drv_motion_read_impact_gyroscope(&accuracy, &timestamp);
+        // Euler
+        drv_motion_read_impact_euler(&accuracy, &timestamp);
+
+        if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
+            if (m_impact.previous_acceleration > current_acceleration){
+                    m_impact.impact = true;
+                    m_impact.writeIndex = (m_impact.currentIndex + m_motion.motion_freq_hz) % (2 * m_motion.motion_freq_hz + 1);
+                    m_impact.impactIndex = m_impact.writeIndex;
+            } else{
+                m_impact.previous_acceleration = current_acceleration;
+            }
+        }
+
         if (m_impact.impact){
+            drv_motion_queue_add_acceleration();
+            drv_motion_queue_add_gyroscope();
+            drv_motion_queue_add_euler();
+            //Meter datos en la queue
             m_impact.writeIndex = (m_impact.writeIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
             if (m_impact.writeIndex == m_impact.impactIndex){
-                        m_impact.impact = false;
-                        m_impact.previous_acceleration = 0;
+                m_impact.impact = false;
+                m_impact.previous_acceleration = 0;
             }
+        }
+
+        if (m_impact_queue.size){
+            int16_t data[7];
+            data[0] = m_impact.type;
+
+            for (uint8_t i = 1; i < 7; i++){
+                data[i] = drv_motion_dequeue();
+            }
+
+            evt = DRV_MOTION_EVT_IMPACT;
+            m_impact.type ^= 1;
+            m_motion.evt_handler(&evt, data, sizeof(int16_t) * 7);
         }
         m_impact.currentIndex = (m_impact.currentIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
     }
@@ -1083,7 +1082,6 @@ uint32_t drv_motion_config(drv_motion_cfg_t * p_cfg)
     m_motion.compass_interval_ms   = p_cfg->compass_interval_ms;
     m_motion.motion_freq_hz        = p_cfg->motion_freq_hz;
     m_motion.wake_on_motion        = p_cfg->wake_on_motion;
-    m_motion.impact_detection      = p_cfg->impact_detection;
     m_motion.impact_threshold      = p_cfg->impact_threshold;
 
     if (m_motion.running)
@@ -1144,12 +1142,15 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     m_motion.compass_interval_ms   = COMPASS_READ_MS;
     m_motion.motion_freq_hz        = DEFAULT_MPU_HZ;
     m_motion.wake_on_motion        = 1;
-    m_motion.impact_detection      = 0;
     m_motion.impact_threshold      = DEFAULT_IMP_THR;
 
     m_impact.currentIndex          = 0;
     m_impact.previous_acceleration = 0;
     m_impact.impact                = 0;
+    m_impact.type                  = 0;
+    m_impact_queue.entryIndex      = 0;
+    m_impact_queue.exitIndex       = 0;
+    m_impact_queue.size            = 0;
 
     err_code = drv_acc_init(&lis_init_params);
     RETURN_IF_ERROR(err_code);
@@ -1248,4 +1249,105 @@ uint32_t drv_motion_sonification_set_volume(uint16_t volume){
     m_sonification.volume = volume;
 
     return NRF_SUCCESS;
+}
+
+float drv_motion_read_impact_acceleration(int8_t *accuracy, inv_time_t *timestamp){
+    int32_t data[3];
+    float current_acceleration = 0;
+    if (inv_get_sensor_type_accel((long *)&data, accuracy, timestamp)){
+        m_impact.acc_x[m_impact.currentIndex] = data[0] >> RAW_Q_FORMAT_ACC_INTEGER_BITS;
+        m_impact.acc_y[m_impact.currentIndex] = data[1] >> RAW_Q_FORMAT_ACC_INTEGER_BITS;
+        m_impact.acc_z[m_impact.currentIndex] = data[2] >> RAW_Q_FORMAT_ACC_INTEGER_BITS;
+        current_acceleration += (float)(data[0]) / RAW_Q_FORMAT_INTEGER_BITS * (float)(data[0]) / RAW_Q_FORMAT_INTEGER_BITS;
+        current_acceleration += (float)(data[1]) / RAW_Q_FORMAT_INTEGER_BITS * (float)(data[1]) / RAW_Q_FORMAT_INTEGER_BITS;
+        current_acceleration += (float)(data[2]) / RAW_Q_FORMAT_INTEGER_BITS * (float)(data[2]) / RAW_Q_FORMAT_INTEGER_BITS;
+    } else{
+        m_impact.acc_x[m_impact.currentIndex] = 0;
+        m_impact.acc_y[m_impact.currentIndex] = 0;
+        m_impact.acc_z[m_impact.currentIndex] = 0;
+    }
+    return current_acceleration;
+}
+
+uint32_t drv_motion_read_impact_gyroscope(int8_t *accuracy, inv_time_t *timestamp){
+    int32_t data[3];
+    if (inv_get_sensor_type_gyro((long *)&data, accuracy, timestamp)){
+        m_impact.gyro_x[m_impact.currentIndex] = data[0] >> RAW_Q_FORMAT_GYR_INTEGER_BITS;
+        m_impact.gyro_y[m_impact.currentIndex] = data[1] >> RAW_Q_FORMAT_GYR_INTEGER_BITS;
+        m_impact.gyro_z[m_impact.currentIndex] = data[2] >> RAW_Q_FORMAT_GYR_INTEGER_BITS;
+    } else{
+        m_impact.gyro_x[m_impact.currentIndex] = 0;
+        m_impact.gyro_y[m_impact.currentIndex] = 0;
+        m_impact.gyro_z[m_impact.currentIndex] = 0;
+    }
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_read_impact_euler(int8_t *accuracy, inv_time_t *timestamp){
+    int32_t data[3];
+    if (inv_get_sensor_type_euler((long *)data, accuracy, timestamp)){
+        m_impact.roll[m_impact.currentIndex]  = data[0];
+        m_impact.pitch[m_impact.currentIndex] = data[1];
+        m_impact.yaw[m_impact.currentIndex]   = data[2];
+    } else{
+        m_impact.roll[m_impact.currentIndex]  = 0;
+        m_impact.pitch[m_impact.currentIndex] = 0;
+        m_impact.yaw[m_impact.currentIndex]   = 0;
+    }
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_queue_add(int16_t value){
+    m_impact_queue.size++;
+    m_impact_queue.data[m_impact_queue.entryIndex] = value;
+    m_impact_queue.entryIndex++;
+    m_impact_queue.entryIndex %= MAX_QUEUE_SIZE;
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_queue_add_acceleration(){
+    drv_motion_queue_add(m_impact.acc_x[m_impact.writeIndex]);
+    drv_motion_queue_add(m_impact.acc_y[m_impact.writeIndex]);
+    drv_motion_queue_add(m_impact.acc_z[m_impact.writeIndex]);
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_queue_add_gyroscope(){
+    drv_motion_queue_add(m_impact.gyro_x[m_impact.writeIndex]);
+    drv_motion_queue_add(m_impact.gyro_y[m_impact.writeIndex]);
+    drv_motion_queue_add(m_impact.gyro_z[m_impact.writeIndex]);
+
+    return NRF_SUCCESS;
+}
+
+uint32_t drv_motion_queue_add_euler(){
+    int16_t ms, ls;
+    ms = m_impact.roll[m_impact.writeIndex] / RAW_Q_FORMAT_INTEGER_BITS;
+    ls = (int16_t)m_impact.roll[m_impact.writeIndex];
+    drv_motion_queue_add(ms);
+    drv_motion_queue_add(ls);
+    ms = m_impact.pitch[m_impact.writeIndex] / RAW_Q_FORMAT_INTEGER_BITS;
+    ls = (int16_t)m_impact.pitch[m_impact.writeIndex];
+    drv_motion_queue_add(ms);
+    drv_motion_queue_add(ls);
+    ms = m_impact.yaw[m_impact.writeIndex] / RAW_Q_FORMAT_INTEGER_BITS;
+    ls = (int16_t)m_impact.yaw[m_impact.writeIndex];
+    drv_motion_queue_add(ms);
+    drv_motion_queue_add(ls);
+
+    return NRF_SUCCESS;
+}
+
+int16_t drv_motion_dequeue(){
+    if (m_impact_queue.size <= 0){
+        return 0;
+    }
+
+    m_impact_queue.size--;
+    int16_t data = m_impact_queue.data[m_impact_queue.exitIndex];
+    m_impact_queue.exitIndex++;
+    m_impact_queue.exitIndex %= MAX_QUEUE_SIZE;
+    return data;
 }

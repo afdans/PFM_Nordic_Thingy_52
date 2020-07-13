@@ -15,10 +15,13 @@
     <h1>Hello Griffith</h1>
     <button onclick="connect();" id="connectBTN">Connect!</button>
     <div id="features" style="display:none">
-        <button onclick="disconnect();">Disconnect!</button>
-        <button onclick="dataRecordStart();">Start Recording Data!</button>
-        <button onclick="dataRecordStop();">Stop Recording Data!</button>
-        <form name="saveData" id="saveData" action="\PFM_Nordic_Thingy_52\client\WebPage\DataSave.php" method="post">
+        <button onclick="disconnect();">Disconnect!</button><br>
+        <button id="dataRecordStartBTN" onclick="dataRecordStart();">Start Recording Data!</button><br>
+        <button id="dataRecordStopBTN" onclick="dataRecordStop();">Stop Recording Data!</button><br>
+        <form name="saveData" id="saveData" action="\PFM_Nordic_Thingy_52\client\WebPage\DataSave.php" method="post">  
+            Use data for file names <?php createToggleSwitch("useDate"); ?>
+            Save Environment: <input type="text" name="environmentFileName" value="dataEnvironment"><?php createToggleSwitch("saveEnvironment"); ?>
+            Save Motion: <input type="text" name="motionFileName" value="Impact_test"><?php createToggleSwitch("saveMotion", 1); ?>
             <?php createTagFromArray(get_defined_constants(true)['user']); ?>
         </form>
         <button onclick="showConfigs();" id="configurationsBTN">Show Configurations</button>
@@ -90,7 +93,7 @@
                 Euler: <?php createToggleSwitch("readEuler"); ?>
                 Quaternion: <?php createToggleSwitch("readQuaternion"); ?>
                 Raw: <?php createToggleSwitch("readRawMotion"); ?>
-                Impact: <?php createToggleSwitch("readImpact"); ?>
+                Impact: <?php createToggleSwitch("readImpact", 1); ?>
             </div>
         </div>
     </div>

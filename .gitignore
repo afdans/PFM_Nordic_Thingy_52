@@ -34,9 +34,25 @@
 *.sty
 *.pdf
 *.aux
+*.bbl
+*.bcf
+*.blg
+*.lof
+*.toc
+*.lot
+*.run.xml
 
 # ignore data files
 *.csv
+*.mat
+*.m4a
+
+# ignore images and figures
+*.fig
+*.jpeg
+*.jpg
+*.svg
+*.docx
 
 # -------------------------
 # BEGIN Whitelisted Files

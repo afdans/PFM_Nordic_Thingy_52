@@ -153,15 +153,22 @@ typedef PACKED( struct
     uint16_t                  compass_interval_ms;
     uint16_t                  motion_freq_hz;
     uint8_t                   wake_on_motion;
-    uint8_t                   impact_detection;
     uint8_t                   impact_threshold;
 }) ble_tms_config_t;
 
+
 typedef PACKED( struct
 {
-    int16_t               type;
-    ble_tms_raw_accel_t   accel;
-    ble_tms_raw_gyro_t    gyro;
+    int16_t               A;
+    int16_t               B;
+    int16_t               C;
+}) ble_tms_impact_sub_t;
+
+typedef PACKED( struct
+{
+    int16_t              type;
+    ble_tms_impact_sub_t first;
+    ble_tms_impact_sub_t second;
 }) ble_tms_impact_t;
 
 #define BLE_TMS_CONFIG_PEDO_INT_MIN   100   ///< Minimum pedometer interval [ms].
@@ -174,8 +181,6 @@ typedef PACKED( struct
 #define BLE_TMS_CONFIG_MPUF_MAX       200   ///< Maximum motion processing frequency [Hz].
 #define BLE_TMS_CONFIG_WOM_MIN          0   ///< Wake on motion on.
 #define BLE_TMS_CONFIG_WOM_MAX          1   ///< Wake on motion off.
-#define BLE_TMS_CONFIG_ID_MIN           0   ///< Impact detection off.
-#define BLE_TMS_CONFIG_ID_MAX           1   ///< Impact detection on.
 #define BLE_TMS_CONFIG_IT_MIN           2   ///< Minumum impact threshold [G].
 #define BLE_TMS_CONFIG_IT_MAX          15   ///< Maximum impact threshold [G].
 

@@ -297,8 +297,6 @@ static void on_authorize_req(ble_tms_t * p_tms, ble_evt_t * p_ble_evt)
                      (p_config->motion_freq_hz      > BLE_TMS_CONFIG_MPUF_MAX)          ||
                   /* (p_config->wake_on_motion      < BLE_TMS_CONFIG_WOM_MIN)           || */
                      (p_config->wake_on_motion      > BLE_TMS_CONFIG_WOM_MAX)           ||
-                  /* (p_config->impact_detection    < BLE_TMS_CONFIG_ID_MIN)            || */
-                     (p_config->impact_detection    > BLE_TMS_CONFIG_ID_MAX)            ||
                      (p_config->impact_threshold    < BLE_TMS_CONFIG_IT_MIN)            ||
                      (p_config->impact_threshold    > BLE_TMS_CONFIG_IT_MAX) )
                 {
@@ -956,7 +954,7 @@ static uint32_t impact_char_add(ble_tms_t * p_tms, const ble_tms_init_t * p_tms_
     ble_gatts_attr_t    attr_char_value;
     ble_uuid_t          ble_uuid;
     ble_gatts_attr_md_t attr_md;
-    ble_tms_impact_t    impact_init; // Tendrás que cambiarlo cuando sepas que tienes que mandar
+    ble_tms_impact_t    impact_init;
 
     memset(&impact_init, 0, sizeof(impact_init));
     memset(&cccd_md, 0, sizeof(cccd_md));

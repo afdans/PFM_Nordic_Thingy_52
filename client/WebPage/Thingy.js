@@ -13,22 +13,18 @@ var motionConfigCharacteristic;
 var quaternionCharacteristic;
 var motionRawDataCharacteristic;
 var eulerCharacteristic;
+var impactCharacteristic;
 
 // Data Arrays
 var arrTemp = [];
-var arrTempTime = [];
 var arrPressure = [];
-var arrPressureTime = [];
 var arrHumidity = [];
-var arrHumidityTime = [];
 var arrGasCO2 = [];
 var arrGasTVOC = [];
-var arrGasTime = [];
 var arrQuatW = [];
 var arrQuatX = [];
 var arrQuatY = [];
 var arrQuatZ = [];
-var arrQuatTime = [];
 var arrAccelX = [];
 var arrAccelY = [];
 var arrAccelZ = [];
@@ -38,11 +34,9 @@ var arrGyroZ = [];
 var arrMagX = [];
 var arrMagY = [];
 var arrMagZ = [];
-var arrMotionRawTime = [];
 var arrRoll = [];
 var arrPitch = [];
 var arrYaw = [];
-var arrEulerTime = [];
 
 // Which sensors
 var readTemperature;
@@ -92,11 +86,13 @@ async function connect() {
         optionalServices: [UUID(MotionID), UUID(EnvironmentID)]
     });
     await thingy.gatt.connect();
+    document.getElementById("connectBTN").innerHTML = "Connecting";
     console.log(thingy.name + " connected");
     await servicesInit();
     document.getElementById("features").style.display = "block";
     document.getElementById("connectBTN").style.display = "none";
-    document.getElementById("readRawMotion").checked = true;
+    document.getElementById("dataRecordStopBTN").style.display = "none";
+    showConfigs();
 }
 
 /**
@@ -133,6 +129,8 @@ async function servicesInit() {
  */
 async function dataRecordStart() {
     console.log("Data recording started");
+    document.getElementById("dataRecordStartBTN").style.display = "none";
+    document.getElementById("dataRecordStopBTN").style.display = "block";
     getDesiredSensors();
     if (readTemperature) {
         temperatureCharacteristic.addEventListener('characteristicvaluechanged', readDataTemp);
@@ -233,19 +231,14 @@ function UUID(id) {
  */
 function setRecordedData() {
     document.getElementById("temp").value = arrTemp.join(CSVSeparator);
-    document.getElementById("tempT").value = arrTempTime.join(CSVSeparator);
     document.getElementById("pressure").value = arrPressure.join(CSVSeparator);
-    document.getElementById("pressureT").value = arrPressureTime.join(CSVSeparator);
     document.getElementById("humidity").value = arrHumidity.join(CSVSeparator);
-    document.getElementById("humidityT").value = arrHumidityTime.join(CSVSeparator);
     document.getElementById("CO2").value = arrGasCO2.join(CSVSeparator);
     document.getElementById("TVOC").value = arrGasTVOC.join(CSVSeparator);
-    document.getElementById("GasT").value = arrGasTime.join(CSVSeparator);
     document.getElementById("quatW").value = arrQuatW.join(CSVSeparator);
     document.getElementById("quatX").value = arrQuatX.join(CSVSeparator);
     document.getElementById("quatY").value = arrQuatY.join(CSVSeparator);
     document.getElementById("quatZ").value = arrQuatZ.join(CSVSeparator);
-    document.getElementById("quatT").value = arrQuatTime.join(CSVSeparator);
     document.getElementById("accelX").value = arrAccelX.join(CSVSeparator);
     document.getElementById("accelY").value = arrAccelY.join(CSVSeparator);
     document.getElementById("accelZ").value = arrAccelZ.join(CSVSeparator);
@@ -255,18 +248,15 @@ function setRecordedData() {
     document.getElementById("magX").value = arrMagX.join(CSVSeparator);
     document.getElementById("magY").value = arrMagY.join(CSVSeparator);
     document.getElementById("magZ").value = arrMagZ.join(CSVSeparator);
-    document.getElementById("motionT").value = arrMotionRawTime.join(CSVSeparator);
     document.getElementById('roll').value = arrRoll.join(CSVSeparator);
     document.getElementById('pitch').value = arrPitch.join(CSVSeparator);
     document.getElementById('yaw').value = arrYaw.join(CSVSeparator);
-    document.getElementById('eulerT').value = arrEulerTime.join(CSVSeparator);
 }
 
 /**
  * Reads and saves data from the temperature sensor
  */
 function readDataTemp() {
-    arrTempTime.push(Date.now());
     const { value } = this;
     const integer = value.getInt8(0, littleEndian);
     const decimal = value.getUint8(1, littleEndian);
@@ -278,7 +268,6 @@ function readDataTemp() {
  * Reads and saves data from the pressure sensor
  */
 function readDataPressure() {
-    arrPressureTime.push(Date.now());
     const { value } = this;
     const integer = value.getInt32(0, littleEndian);
     const decimal = value.getUint8(1, littleEndian);
@@ -290,7 +279,6 @@ function readDataPressure() {
  * Reads and saves data from the humidity sensor
  */
 function readDataHumidity() {
-    arrHumidityTime.push(Date.now());
     const { value } = this;
     const RH = value.getUint8(0, littleEndian);
     arrHumidity.push(RH);
@@ -300,7 +288,6 @@ function readDataHumidity() {
  * Reads and saces data from the gas sensor
  */
 function readDataGas() {
-    arrGasTime.push(Date.now());
     const { value } = this;
     const CO2 = value.getUint16(0, littleEndian);
     const TVOC = value.getUint16(2, littleEndian);
@@ -313,7 +300,6 @@ function readDataGas() {
  */
 function readDataQuaternion() {
     console.log("Q:" + Date.now());
-    arrQuatTime.push(Date.now());
     const { value } = this;
     var quatW = value.getInt32(0, littleEndian) / (1 << 30);
     var quatX = value.getInt32(4, littleEndian) / (1 << 30);
@@ -337,7 +323,6 @@ function readDataQuaternion() {
  * aka, acceleration, gyroscope and magnetometer
  */
 function readDataMotionRaw() {
-    arrMotionRawTime.push(Date.now());
     const { value } = this;
     // Acceleration
     const accelX = value.getInt16(0, littleEndian) / 1024;
@@ -368,32 +353,50 @@ function readDataMotionRaw() {
  * aka, acceleration, gyroscope and euler
  */
 function readDataImpact() {
-    console.log("Reading impact data");
-    arrMotionRawTime.push(Date.now());
+    //console.log("Reading impact data");
     const { value } = this;
     const type = value.getInt16(0, littleEndian);
-    // Acceleration
-    const accelX = value.getInt16(2, littleEndian) / 1024;
-    const accelY = value.getInt16(4, littleEndian) / 1024;
-    const accelZ = value.getInt16(6, littleEndian) / 1024;
-    // Gyroscope
-    const gyroX = value.getInt16(8, littleEndian) / 2048;
-    const gyroY = value.getInt16(10, littleEndian) / 2048;
-    const gyroZ = value.getInt16(12, littleEndian) / 2048;
-    arrAccelX.push(accelX);
-    arrAccelY.push(accelY);
-    arrAccelZ.push(accelZ);
-    arrGyroX.push(gyroX);
-    arrGyroY.push(gyroY);
-    arrGyroZ.push(gyroZ);
-    console.log("Type: " + type + " X: " + accelX + " Y: " + accelY + " Z: " + accelZ);
+    switch (type) {
+        case 0:
+            // Acceleration
+            const accelX = value.getInt16(2, littleEndian) / 1024;
+            const accelY = value.getInt16(4, littleEndian) / 1024;
+            const accelZ = value.getInt16(6, littleEndian) / 1024;
+            // Gyroscope
+            const gyroX = value.getInt16(8, littleEndian) / 2048;
+            const gyroY = value.getInt16(10, littleEndian) / 2048;
+            const gyroZ = value.getInt16(12, littleEndian) / 2048;
+            arrAccelX.push(accelX);
+            arrAccelY.push(accelY);
+            arrAccelZ.push(accelZ);
+            arrGyroX.push(gyroX);
+            arrGyroY.push(gyroY);
+            arrGyroZ.push(gyroZ);
+            break;
+        case 1:
+            console.log(value);
+            var roll = value.getInt16(2, littleEndian) << 16;
+            console.log("Roll:" + roll);
+            roll |= value.getInt16(4, littleEndian);
+            roll /= 65536;
+            var pitch = value.getInt16(6, littleEndian) << 16;
+            pitch |= value.getInt16(8, littleEndian);
+            pitch /= 65536;
+            var yaw = value.getInt16(10, littleEndian) << 16;
+            yaw |= value.getInt16(12, littleEndian);
+            yaw /= 65536;
+            arrRoll.push(roll);
+            arrPitch.push(pitch);
+            arrYaw.push(yaw);
+            console.log("Euler:" + roll + ": " + pitch + ": " + yaw);
+            break;
+    }
 }
 
 /**
  * Reads and saves roll, pitch and yaw
  */
 function readDataEuler() {
-    arrEulerTime.push(Date.now());
     const { value } = this;
     const roll = value.getInt32(0, littleEndian) / 65536;
     const pitch = value.getInt32(4, littleEndian) / 65536;
@@ -443,18 +446,18 @@ async function readMotionConfig() {
     const magnetCompensationInterval = value.getUint16(4, littleEndian);
     const motionProcessFrequency = value.getUint16(6, littleEndian);
     const wakeOnMotion = value.getUint8(8);
-    const impactDetection = value.getUint8(9);
-    const impactThreshold = value.getUint8(10);
+    const impactThreshold = value.getUint8(9);
     const formattedData = {
         stepCountInterval: stepCountInterval,
         tempCompensationInterval: tempCompensationInterval,
         magnetCompensationInterval: magnetCompensationInterval,
         motionProcessFrequency: motionProcessFrequency,
         wakeOnMotion: wakeOnMotion,
-        impactDetection: impactDetection,
         impactThreshold: impactThreshold,
     };
     console.log("Motion config read successful");
+    document.getElementById('samplingFreq').value = motionProcessFrequency;
+    document.getElementById('threshold').value = impactThreshold;
     displayMotionConfig(formattedData);
     return formattedData;
 }
@@ -514,9 +517,8 @@ async function writeMotionConfig(formattedData) {
     const magnetCompensationInterval = formattedData.magnetCompensationInterval;
     const motionProcessFrequency = formattedData.motionProcessFrequency;
     const wakeOnMotion = formattedData.wakeOnMotion;
-    const impactDetection = formattedData.impactDetection;
     const impactThreshold = formattedData.impactThreshold;
-    var dataArray = new Uint8Array(11);
+    var dataArray = new Uint8Array(10);
     dataArray[0] = stepCountInterval & 0xFF;
     dataArray[1] = (stepCountInterval >> 8) & 0xFF;
     dataArray[2] = tempCompensationInterval & 0xFF;
@@ -526,9 +528,10 @@ async function writeMotionConfig(formattedData) {
     dataArray[6] = motionProcessFrequency & 0xFF;
     dataArray[7] = (motionProcessFrequency >> 8) & 0xFF;
     dataArray[8] = wakeOnMotion;
-    dataArray[9] = impactDetection;
-    dataArray[10] = impactThreshold;
+    dataArray[9] = impactThreshold;
     await motionConfigCharacteristic.writeValue(dataArray);
+    document.getElementById('samplingFreq').value = motionProcessFrequency;
+    document.getElementById('threshold').value = impactThreshold;
     console.log("Motion config write successful");
 
 }
@@ -562,7 +565,6 @@ async function saveMotionConfig() {
         magnetCompensationInterval: document.getElementById("magnetCompensationInterval").value,
         motionProcessFrequency: document.getElementById("motionFrequency").value,
         wakeOnMotion: !document.getElementById("wakeOnMotion").checked,
-        impactDetection: document.getElementById("impactDetection").checked,
         impactThreshold: document.getElementById("impactThreshold").value,
     };
     await writeMotionConfig(formattedData);
@@ -611,7 +613,6 @@ function displayMotionConfig(formattedData) {
     document.getElementById("tempCompensationInterval").value = formattedData.tempCompensationInterval;
     document.getElementById("magnetCompensationInterval").value = formattedData.magnetCompensationInterval;
     document.getElementById("wakeOnMotion").checked = !formattedData.wakeOnMotion;
-    document.getElementById("impactDetection").checked = formattedData.impactDetection;
     document.getElementById("impactThreshold").value = formattedData.impactThreshold;
 }
 
