@@ -11,5 +11,5 @@ function createTag($name){
 }
 
 function createToggleSwitch($id){
-    echo "<label class=\"switch\"><input type=\"checkbox\" id=\"$id\" checked><span class=\"slider round\"></span></label><br>";
+    echo "<label class=\"switch\"><input type=\"checkbox\" id=\"$id\" unchecked><span class=\"slider round\"></span></label><br>";
 }

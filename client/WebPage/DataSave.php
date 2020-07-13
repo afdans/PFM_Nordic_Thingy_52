@@ -1,15 +1,15 @@
 <?php
 include 'TagIds.php';
-$useDate = 0;
+$useDate = 1;
 date_default_timezone_set('Australia/Brisbane');
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $myFileEnvironment = openFile("Environment", $useDate);
+    //$myFileEnvironment = openFile("Environment", $useDate);
     $myFileMotion = openFile("Motion", $useDate);
     $motion = getMotionData();
-    $environment = getEnvironmentData();
-    fwrite($myFileEnvironment, $environment);
+    //$environment = getEnvironmentData();
+    //fwrite($myFileEnvironment, $environment);
     fwrite($myFileMotion, $motion);
-    fclose($myFileEnvironment);
+    //fclose($myFileEnvironment);
     fclose($myFileMotion);
 }
 header("Location: Thingy.php");

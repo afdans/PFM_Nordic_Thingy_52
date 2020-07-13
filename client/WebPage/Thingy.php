@@ -4,7 +4,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" type="text/css" href="Thingy.css">
+    <link rel="stylesheet" type="text/css" href="\PFM_Nordic_Thingy_52\client\WebPage\Thingy.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ei=edge">
@@ -18,7 +18,7 @@
         <button onclick="disconnect();">Disconnect!</button>
         <button onclick="dataRecordStart();">Start Recording Data!</button>
         <button onclick="dataRecordStop();">Stop Recording Data!</button>
-        <form name="saveData" id="saveData" action="DataSave.php" method="post">
+        <form name="saveData" id="saveData" action="\PFM_Nordic_Thingy_52\client\WebPage\DataSave.php" method="post">
             <?php createTagFromArray(get_defined_constants(true)['user']); ?>
         </form>
         <button onclick="showConfigs();" id="configurationsBTN">Show Configurations</button>
@@ -94,7 +94,7 @@
             </div>
         </div>
     </div>
-    <script src="Thingy.js"></script>
+    <script src="\PFM_Nordic_Thingy_52\client\WebPage\Thingy.js"></script>
 </body>
 
 </html>

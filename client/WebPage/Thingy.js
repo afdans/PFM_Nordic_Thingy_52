@@ -96,6 +96,7 @@ async function connect() {
     await servicesInit();
     document.getElementById("features").style.display = "block";
     document.getElementById("connectBTN").style.display = "none";
+    document.getElementById("readRawMotion").checked = true;
 }
 
 /**
@@ -347,9 +348,9 @@ function readDataMotionRaw() {
     const gyroY = value.getInt16(8, littleEndian) / 2048;
     const gyroZ = value.getInt16(10, littleEndian) / 2048;
     // Magnetometer
-    const magX = value.getInt16(12, littleEndian) / 4096;
-    const magY = value.getInt16(14, littleEndian) / 4096;
-    const magZ = value.getInt16(16, littleEndian) / 4096;
+    const magX = value.getInt16(12, littleEndian); // 4096;
+    const magY = value.getInt16(14, littleEndian); // 4096;
+    const magZ = value.getInt16(16, littleEndian); // 4096;
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
@@ -392,7 +393,6 @@ function readDataImpact() {
  * Reads and saves roll, pitch and yaw
  */
 function readDataEuler() {
-    console.log("E:" + Date.now());
     arrEulerTime.push(Date.now());
     const { value } = this;
     const roll = value.getInt32(0, littleEndian) / 65536;
@@ -401,6 +401,7 @@ function readDataEuler() {
     arrRoll.push(roll);
     arrPitch.push(pitch);
     arrYaw.push(yaw);
+    console.log("E:" + roll);
 }
 
 /**
