@@ -165,6 +165,7 @@ static struct
     uint16_t               center_freq_hz;
     bool                   enabled;
     bool                   sensitivity;
+    int16_t                stationary;
     sonification_channel_t channel;
     sonification_sensor_t  sensor;
 } m_sonification;
@@ -225,6 +226,7 @@ static void mpulib_data_send(void)
     if (m_motion.features & DRV_MOTION_FEATURE_MASK_SONIFICATION){
         int32_t frequency_offset;
         bool    valid_data = false;
+        bool    reset = false;
         int16_t sensitivity;
 
         switch (m_sonification.sensor){
@@ -255,7 +257,7 @@ static void mpulib_data_send(void)
                 if(m_sonification.sensitivity){
                     sensitivity = 50;
                 }else{
-                    sensitivity = 10;
+                    sensitivity = 20;
                 }
                 break;
         }
@@ -314,19 +316,33 @@ static void mpulib_data_send(void)
                     }
                     break;
                 case SONIFICATION_SENSOR_RAW_GYRO:
+                    frequency_offset = abs(frequency_offset);
                     if (m_sonification.sensitivity){
-                        frequency_offset = frequency_offset * 4;
+                        frequency_offset = frequency_offset * 5;
                     }else{
-                        frequency_offset = frequency_offset * 20;
+                        frequency_offset = frequency_offset * 12;
+                    }
+                    if (frequency_offset <= 20){
+                        frequency_offset = -m_sonification.center_freq_hz;
+                        m_sonification.stationary++;
+                    }else{
+                        if (m_sonification.stationary > 2){
+                            reset = true;
+                        }
+                        m_sonification.stationary = 0;
                     }
                     break;
             }
-
-            if (frequency_offset <= -900){
-                frequency_offset = -899;
-            }
+            frequency_offset = 0;
             NRF_LOG_DEBUG("Offset is: %d\r\n", frequency_offset);
-            drv_speaker_multi_tone_update(m_sonification.center_freq_hz + frequency_offset, m_sonification.duration, m_sonification.volume);
+            if (m_sonification.stationary == 6) {
+                drv_speaker_tone_start(m_sonification.center_freq_hz , 0, 0);
+            }else{
+                if (reset){
+                    drv_speaker_tone_start(m_sonification.center_freq_hz + frequency_offset, m_sonification.duration, m_sonification.volume);
+                }
+                drv_speaker_multi_tone_update(m_sonification.center_freq_hz + frequency_offset, m_sonification.duration, m_sonification.volume);
+            }
         }
     }
 
@@ -1172,6 +1188,7 @@ uint32_t drv_motion_enable_sonification(sonification_channel_t channel){
 
     m_sonification.center_freq_hz = SONIFICATION_FREQ_CENTER;
     m_sonification.duration       = 1000 / (m_motion.motion_freq_hz);
+    m_sonification.stationary     = 0;
 
     drv_motion_sonification_set_volume(100);
     drv_motion_sonification_set_sensitivity(0);
