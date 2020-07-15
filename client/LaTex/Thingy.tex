@@ -1,0 +1,270 @@
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Thingy}
+	\caption{Thingy}
+	\label{fig:thingy}
+\end{figure}
+The Thingy:52 is a prototyping platform by Nordic Semiconductor, originally designed to build prototypes and demos without the need to build specific hardware nor write the basic part of the firmware. It is built around the nRF52832 \gls{soc}. It can connect to devices that support \gls{ble}. All the different sensors and actuators can be configured over-the-air using \gls{ble}. \fg{fig:thingy} we can see the Thingy next to its case.
+
+\section{Features} \label{sc:features}
+The key features of the Thingy are the following \cite{DocFeatures}:
+\begin{itemize}
+	\item nRF52832 \gls{soc}
+	\item Configurable RGB LED
+	\item Button
+	\item Cloud connectivity
+	\item iOS and Android Apps
+	\item Web \bt \gls{api}
+	\item Multiple sensors
+	\item Sound module
+	\item Secure \gls{ota-dfu}
+	\item \gls{nfc} support
+\end{itemize}
+The sensors in the Thingy are divided into two groups: environmental and motion.
+
+\subsection{Environmental sensors}\label{sc:features_env}
+The environmental sensors provide the user with the following data from its surroundings.
+\begin{itemize}
+	\item Temperature
+	\item Air pressure
+	\item Humidity
+	\item Air quality (CO$_2$ and TVOC)
+	\item Color and light intensity
+\end{itemize}
+\subsection{Nine-axis motion sensors}\label{sc:features_mot}
+The nine-axis sensors provide the user with the following data from the Thingy's movement.
+\begin{itemize}
+	\item Tap detection
+	\item Orientation
+	\item Step counter
+	\item Quaternions
+	\item Euler angles
+	\item Rotation matrix
+	\item Gravity vector
+	\item Compass heading
+	\item Raw accelerometer, gyroscope and compass data
+\end{itemize}
+
+\section{App}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Menu}
+	\caption{Main menu in iOS App}
+	\label{fig:app_menu}
+\end{figure}
+One way to configure the sensors and actuators is using the iOS and Android Apps. Not only can we configure the Thingy with app, but can also visualize the data live from the Thingy. \fg{fig:app_menu}, we can see the main menu of App, where the available services can be reached. The Thingy features are divided into services as a result of using \gls{ble} and its nomenclature. \gls{ble} will be explain in detail in section \ref{sc:ble}.
+
+\subsection{Environment}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Environment}
+	\caption{Environment service home in iOS App}
+	\label{fig:app_environment}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Environment_Info}
+		\caption{Environment service home icon legend in iOS App}
+		\label{fig:app_environment_info}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Environment_Select}
+		\caption{Environment service sensor selection in iOS App}
+		\label{fig:app_environment_select}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Environment_Settings}
+		\caption{Environment service settings in iOS App}
+		\label{fig:app_environment_settings}
+	\end{subfigure}
+	\caption{Environment service options in iOS App}
+	\label{fig:app_environment_options}
+\end{figure}
+The Environment service provides a set of environmental data.	\fg{fig:app_environment}, we can see the Environment service's home page. In addition to visualizing the latest data from the sensors specified in subsection \ref{sc:features_env}, we can also see a plot with the last 10 values of some of the sensors. \fg{fig:app_environment_info}, we can see the icon legend for the current conditions. \fg{fig:app_environment_select}, we can see the option to select which sensors we want to enable. \fg{fig:app_environment_settings}, we can see that the only modifiable parameter for each sensors is its sample rate.
+
+\subsection{\gls{ui}}
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_UI_Unknown}
+		\caption{\gls{ui} service unknown button state in iOS App}
+		\label{fig:app_ui_unknown}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_UI_Pressed}
+		\caption{\gls{ui} service button pressed in iOS App}
+		\label{fig:app_ui_pressed}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_UI_Released}
+		\caption{\gls{ui} service button released in iOS App}
+		\label{fig:app_ui_released}
+	\end{subfigure}
+	\caption{\gls{ui} service home in iOS App}
+	\label{fig:app_ui}
+\end{figure}
+The \gls{ui} service allows interaction with the LED and the button on the Thingy.	\fg{fig:app_ui} we can see the \gls{ui} service's home page. On any subfigure's top half we can select the LED's  mode, color, light intensity and breathe delay, if breathe mode is selected. On the bottom half, we can see the button's state. \fg{fig:app_ui_unknown} we have the unknown state, which only occurs when the Thingy is turned on. \fg{fig:app_ui_pressed} we have the pressed state, which occurs when the Thingy's button is pressed. \fg{fig:app_ui_released} we have the released state, which occurs after the Thingy's button is released.
+
+
+\subsection{Motion}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Motion}
+	\caption{Motion service home in iOS App}
+	\label{fig:app_motion}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Motion_Info}
+		\caption{Motion service home icon legend in iOS App}
+		\label{fig:app_motion_info}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Motion_Select}
+		\caption{Motion service sensor selection in iOS App}
+		\label{fig:app_motion_select}
+	\end{subfigure}
+	\begin{subfigure}{.31\textwidth}
+		\centering
+		\includegraphics[width=.9\linewidth]{App_Motion_Settings}
+		\caption{Motion service settings in iOS App}
+		\label{fig:app_motion_settings}
+	\end{subfigure}
+	\caption{Motion service options in iOS App}
+	\label{fig:app_motion_options}
+\end{figure}
+\begin{figure}[hbt!]
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[width=\figWidthApp]{App_Motion_3D_1}
+		\caption{Motion service 3D rotation example in iOS App}
+		\label{fig:app_motion_3D_1}
+	\end{subfigure}
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[width=\figWidthApp]{App_Motion_3D_2}
+		\caption{Motion service 3D rotation example in iOS App}
+		\label{fig:app_motion_3D_2}
+	\end{subfigure}
+	\caption{Motion service 3D rotation examples in iOS App}
+	\label{fig:app_motion_3D}
+\end{figure}
+The Motion service contains all motion-related sensor data received from the Thingy. \fg{fig:app_motion}, we can see the Motion service's home page. We can see the latest value of some of the sensors and the last few values from the Gravity vector sensor. \fg{fig:app_motion_info}, we can see the icon legend for the available sensors. \fg{fig:app_motion_select}, we can see the option to select which sensors we want to enable, however, contrary to what we saw with the Environment service, we can only select four out of the nine sensors specified in subsection \ref{sc:features_mot}. \fg{fig:app_motion_settings}, we can see that we can modify a couple of parameters, such as sample rate and calibration interval, as well as toggling the Wake On Motion feature. \fg{fig:app_motion_3D} we can see two examples of the Thingy's rotation thanks to some of the other sensors.
+
+\subsection{Sound}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Sound}
+	\caption{Sound service home in iOS App}
+	\label{fig:app_sound}
+\end{figure}
+\begin{figure}[hbt!]
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[width=\figWidthApp]{App_Microphone_Phone}
+		\caption{Sound service phone's microphone streaming in iOS App}
+		\label{fig:app_sound_phone}
+	\end{subfigure}
+	\begin{subfigure}{.5\textwidth}
+		\centering
+		\includegraphics[width=\figWidthApp]{App_Microphone_Thingy}
+		\caption{Sound service Thingy's microphone streaming in iOS App}
+		\label{fig:app_sound_thingy}
+	\end{subfigure}
+	\caption{Sounds service microphone options in iOS App}
+	\label{fig:app_sound_microphone}
+\end{figure}
+The Sound service allows control over the Thingy's microphone and speaker. \fg{fig:app_sound}, we can see the Sound service's home page. There are four different options: microphone streaming, 8-Bit PCM streaming, playing one octave in a piano and playing sample sounds. \fg{fig:app_sound_microphone} we have examples from the microphone streaming option. \fg{fig:app_sound_phone} the phone's microphone data is sent to the Thingy and is then played by the Thingy's speaker. \fg{fig:app_sound_thingy} the Thingy's microphone data is sent to the phone and is then played by the phone's speaker.
+
+\subsection{Cloud}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Cloud}
+	\caption{Cloud service home in iOS App}
+	\label{fig:app_cloud}
+\end{figure}
+The Cloud service gives control of the integration of the Thingy app with the \gls{ifttt} web service. \fg{fig:app_cloud}, we can see the Cloud service's home page. There we can choose the \gls{ifttt} trigger events, as well as other information.
+
+\subsection{Configuration}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Configuration}
+	\caption{Configuration service home in iOS App}
+	\label{fig:app_configuration}
+\end{figure}
+The Configuration service is responsible for handling all general configuration parameters that are not related to a particular service. \fg{fig:app_configuration}, we can see the Configuration service's home page. There we can edit a few values such as its name, its advertising parameters, its connection parameters or its Eddystone URL.
+
+\subsection{\gls{ota-dfu}}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidthApp]{App_Firmware_Update}
+	\caption{Firmware update in iOS App}
+	\label{fig:app_firmware}
+\end{figure}
+The mobile apps provide \gls{ota-dfu}. These allow for updates to the Thingy's firmware through the Thingy mobile application. \fg{fig:app_firmware}, we can see that there are two options for firmware updates: Custom and Thingy. On the one hand, Thingy updates are the latest official updates from Nordic Semiconductor, which can be obtained online \cite{FirmwareDownload}. On the other hand, Custom updates are for user created firmware, however this is currently not an option in Android as per \cite{DocFeatures} "Selecting custom firmware is not supported but is planned as a future update".
+
+\section{Web \bt \gls{api}}
+The Web \bt \gls{api} \cite{WebAPI} is the computer equivalent of the mobile Apps. There are minor differences between them, such as battery level and \gls{ota-dfu} not being available in the web version. Furthermore, whereas all iPhone and Android phones have \bt capabilities, not every computer has \bt built-in. There are USB dongles that add \bt capabilities to a computer. Unfortunatelly, even though these dongles do work, they are not picked up by web \bt developed by Google. Therefore, the provided Web \bt \gls{api}  is only suitable for computers that have \bt natively. On addition, web \bt is only supported in Google Chrome \cite{WebBluetooth}.
+
+\section{Firmware}
+We can make a lot of changes with the app and the Web \bt \gls{api} as we saw in the previous sections, however, any changes to the Thingy that cannot be done through the app or the \gls{api}, have to be done by modifying the existing firmware. 
+
+The Thingy runs on the nRF52832 \gls{soc}. The latest version of the application can be found in the company's GitHub \cite{FirmwareGH}. There are two option to compile the Thingy firmware, Keil $\mu${Vision} or GCC \cite{compilefirmware}. I chose the latter. There are several options for upgrading the Thingy firmware. Custom \gls{ota-dfu} is avaible from the iOS App as well as from nRF Connect for PC. The other way to upagrade the firmware is by flashing it via a cabled connection with nRFgo Studio. I chose the latter. Since I choose to use the cabled connection and Thingy does not have a progamming chip, a development kit is required to update the custom firmware. On addition to the application itself, we also need to upload and use SoftDevice, which is a protocol that is used to control wireless connections.
+
+\subsection{GCC}
+There are two reasons why I choose GCC over Keil $\mu${Vision}. First, contrary to Keil, setting up GCC is not only faster and easier but also less error-prone. Second, using GCC gives freedom of choice of code editor. There is no need to use an \gls{ide} since we only need to edit the code and to compile the application we just need to run
+\begin{equation*}
+	make -j
+\end{equation*}
+in the windows command line, as a result, a code editor is all that is needed, and I selected Visual Studio Code. However there are a couple of instances where an extra step is required before running the command. The most recurring occasion is when a header (.h) file is modified. In that scenario, we need to delete the \_build file to recompile the header files. The other occasion, which I never encountered throughout the course of the project, is when a new file is added to the project. In that scenario, we just need to add the file and filepath to the Makefile. Once the command is executed without warnings or errors, the HEX file is generated and can be flashed to the Thingy. 
+
+\subsection{Development kit}\label{sc:dk}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{DK_Board}
+	\caption{nRF52 DK}
+	\label{fig:dk_board}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Thingy_DK_Board}
+	\caption{Thingy 52 connected to nRF52 DK}
+	\label{fig:thingy_dk_board}
+\end{figure}
+As previously stated, the Thingy does not have a programming chip, hence, I used the nRF52 DK to flash the HEX file to the Thingy. The nRF52 DK is a versatile single board development kit for \gls{ble}, \bt mesh, \gls{nfc}, \gls{ant} and 2.4 GHz proprietary development on the nRF52805, nRF52810 and nRF52832 \gls{soc}s \cite{dkboard}. \fg{fig:dk_board} we can see the nRF52 DK board. The board has a micro-USB connector that is used to connect to the computer's USB port. However, not every micro-USB to USB cable works, a cable that has SEGGER J-Link capabilities is required. Addtionally, we need to connect the Thingy and the board, to do that, we require a 10-pin 2x5 Socket-Socket 1.27mm IDC (SWD) cable.
+
+\fg{fig:thingy_dk_board} we can see the Thingy connected to the board, ready to be programmed. Requiring the nRF52 DK and the SWD cable was not originally planned, and therefore had to be ordered once we realised that they were needed. Unfortunately, due to \cov, something that should have taken less than a week to arrive, took way longer.
+
+\subsection{SoftDevice}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\figWidth]{SoftDevice_Stack_Architecture}
+	\caption{SoftDevice stack architecture}
+	\label{fig:softdevice_stack}
+\end{figure}
+A SoftDevice is a wireless protocol stack that complements an nRF5 Series \gls{soc}. Nordic Semiconductor provides them as precompiles binary files. While it is possible to build applications without using a SoftDevice, all nRF5 SDK example applications that use \bt or \gls{ant} require a SoftDevice \cite{SoftDevice}.
+
+The \gls{api} is defined above the \gls{gatt}, \gls{gap}, and \gls{l2cap}. Other protocols, such as the \gls{att}, \gls{sm}, and \gls{ll}, are managed by the higher layers of the SoftDevice as shown in Figure  \ref{fig:softdevice_stack}.
+
+There are up to 13 different versions of SoftDevice, each one has a specific purpose, depending on the wireless protocol, the chip's role and the \gls{soc}. Checking the compatibility matrices \cite{SoftDevice}, we know that the required SoftDevice is S132.
+
+\subsection{nRFgo Studio}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{nRFgo_Studio}
+	\caption{nRFgo Studio}
+	\label{fig:nrfgo_studio}
+\end{figure}
+Choosing nRFgo Studio as the way to flash the application was an easy decision. JLink is faster than \gls{ota-dfu}. Furthermore, there is no need to generate public and private keys, a custom bootloader or custom bootloader settings to create my own packages. Moreover, if I were to use the iOS App instead, I would have to send the package to the phone. All of this is not that bad for a finalized product, but having extra steps and the bootlader to take care of in the development stage, adds up to a lot more work in the long run. As stated in subsection \ref{sc:dk}, the required equipment to update the firmware with nRFgo Studio took a while to arrive. As a result, after downloading and setting up the firmware and required software, so as to not sit and wait, I unsuccessfully attempted to use \gls{ota-dfu} method. Auspiciously, the equipment arrived before being sent to work from home.
+
+\fg{fig:nrfgo_studio} we can see the nRFgo Studio \gls{ui}. On the bottom left corner, we can see that a nRF52 development board is being used. Then if we look at the center section, we see the possibility to program all three sections, SoftDevice, Application and Bootloader.

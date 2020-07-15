@@ -53,6 +53,7 @@
 *.jpg
 *.svg
 *.docx
+*.png
 
 # -------------------------
 # BEGIN Whitelisted Files

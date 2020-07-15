@@ -1,20 +1,67 @@
-\documentclass[a4paper, 11pt] {article}
+\documentclass[a4paper, 11pt, twoside] {report}
 
+\usepackage{PFM}
 
 \title{Wearable sensor developments using the Nordic Thingy 52 IOT Sensor Kit}
 \author{Alejandro Fernández-Dans Goicoechea}
 \date{\today}
+
+
 \begin{document}
-	\maketitle
-	\section{Introduction}
-	\section{Nordic Thingy 52}
-	\subsection{Sensors}
-	\subsection{Firmware}
-	\subsection{Data acquisition}
-	\section{Data processing in ¿Matlab?}
-	\section{ML part}
-	\subsection{Data obtainment method}
-	\subsection{Data treatment}
-	\subsection{Algorithm}
-	\subsection{Firmaware implementation}
+	\includepdf[fitpaper,pages=-]{PFM_Portada}
+	\cleardoublepage
+
+	\setforewordstyle
+	\includepdf[fitpaper,pages=-]{PFM_Primera_Hoja}
+	\cleardoublepage
+
+	\glsunsetall
+	\chapter*{}
+	\input{Gratitude}
+	\cleardoublepage
+
+	\tableofcontents
+	\cleardoublepage
+
+	\listoffigures
+	\cleardoublepage
+
+	\listoftables
+	\cleardoublepage
+	\glsresetall
+
+	\chapter*{Abstract}
+	\input{Abstract}
+	\cleardoublepage
+
+	\setbodystyle
+
+	\chapter{Introduction}
+	\input{Introduction}
+	\cleardoublepage
+
+	\chapter{Nordic Thingy 52}
+	\input{Thingy}
+	\cleardoublepage
+
+	\chapter{Impact detection}
+	\input{Impact_detection}
+	\cleardoublepage
+
+	\chapter{Sonification}
+	\input{Sonification}
+	\cleardoublepage
+
+	\chapter{Further work}
+	\cleardoublepage
+
+	\chapter{Conclusion}
+	\cleardoublepage
+
+	\chapter{Budget}
+	\input{Budget}
+	\cleardoublepage
+
+	\printbibliography
+
 \end{document}
