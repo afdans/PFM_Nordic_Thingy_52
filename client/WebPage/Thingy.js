@@ -75,6 +75,13 @@ const EulerID = '0407';
 const HeadingID = '0409';
 const ImpactID = '040b';
 
+const ScaleEnv = 100;
+const ScaleAcc = 1024;
+const ScaleGyro = 2048;
+const ScaleMag = 4096;
+const ScaleEuler = 65536;
+const ScaleQuat = (1 << 30);
+
 /**
  * Connects the thingy and gets characteristics
  */
@@ -85,8 +92,8 @@ async function connect() {
         }],
         optionalServices: [UUID(MotionID), UUID(EnvironmentID)]
     });
-    await thingy.gatt.connect();
     document.getElementById("connectBTN").innerHTML = "Connecting";
+    await thingy.gatt.connect();
     console.log(thingy.name + " connected");
     await servicesInit();
     document.getElementById("features").style.display = "block";
@@ -161,7 +168,6 @@ async function dataRecordStart() {
         await eulerCharacteristic.startNotifications();
     }
     if (readImpact) {
-        console.log("I'm comming");
         impactCharacteristic.addEventListener('characteristicvaluechanged', readDataImpact);
         await impactCharacteristic.startNotifications();
     }
@@ -260,7 +266,7 @@ function readDataTemp() {
     const { value } = this;
     const integer = value.getInt8(0, littleEndian);
     const decimal = value.getUint8(1, littleEndian);
-    const temperature = integer + decimal / 100;
+    const temperature = integer + decimal / ScaleEnv;
     arrTemp.push(temperature);
 }
 
@@ -271,7 +277,7 @@ function readDataPressure() {
     const { value } = this;
     const integer = value.getInt32(0, littleEndian);
     const decimal = value.getUint8(1, littleEndian);
-    const pressure = integer + decimal / 100;
+    const pressure = integer + decimal / ScaleEnv;
     arrPressure.push(pressure);
 }
 
@@ -299,12 +305,11 @@ function readDataGas() {
  * Reads and saves data from the Quaternion
  */
 function readDataQuaternion() {
-    console.log("Q:" + Date.now());
     const { value } = this;
-    var quatW = value.getInt32(0, littleEndian) / (1 << 30);
-    var quatX = value.getInt32(4, littleEndian) / (1 << 30);
-    var quatY = value.getInt32(8, littleEndian) / (1 << 30);
-    var quatZ = value.getInt32(12, littleEndian) / (1 << 30);
+    var quatW = value.getInt32(0, littleEndian) / ScaleQuat;
+    var quatX = value.getInt32(4, littleEndian) / ScaleQuat;
+    var quatY = value.getInt32(8, littleEndian) / ScaleQuat;
+    var quatZ = value.getInt32(12, littleEndian) / ScaleQuat;
     const magnitude = Math.sqrt(quatW ** 2 + quatX ** 2 + quatY ** 2 + quatZ ** 2);
     if (magnitude !== 0) {
         quatW /= magnitude;
@@ -325,17 +330,17 @@ function readDataQuaternion() {
 function readDataMotionRaw() {
     const { value } = this;
     // Acceleration
-    const accelX = value.getInt16(0, littleEndian) / 1024;
-    const accelY = value.getInt16(2, littleEndian) / 1024;
-    const accelZ = value.getInt16(4, littleEndian) / 1024;
+    const accelX = value.getInt16(0, littleEndian) / ScaleAcc;
+    const accelY = value.getInt16(2, littleEndian) / ScaleAcc;
+    const accelZ = value.getInt16(4, littleEndian) / ScaleAcc;
     // Gyroscope
-    const gyroX = value.getInt16(6, littleEndian) / 2048;
-    const gyroY = value.getInt16(8, littleEndian) / 2048;
-    const gyroZ = value.getInt16(10, littleEndian) / 2048;
+    const gyroX = value.getInt16(6, littleEndian) / ScaleGyro;
+    const gyroY = value.getInt16(8, littleEndian) / ScaleGyro;
+    const gyroZ = value.getInt16(10, littleEndian) / ScaleGyro;
     // Magnetometer
-    const magX = value.getInt16(12, littleEndian); // 4096;
-    const magY = value.getInt16(14, littleEndian); // 4096;
-    const magZ = value.getInt16(16, littleEndian); // 4096;
+    const magX = value.getInt16(12, littleEndian) / ScaleMag;
+    const magY = value.getInt16(14, littleEndian) / ScaleMag;
+    const magZ = value.getInt16(16, littleEndian) / ScaleMag;
     arrAccelX.push(accelX);
     arrAccelY.push(accelY);
     arrAccelZ.push(accelZ);
@@ -345,7 +350,6 @@ function readDataMotionRaw() {
     arrMagX.push(magX);
     arrMagY.push(magY);
     arrMagZ.push(magZ);
-    console.log("Acceleration-> X: " + accelX + " Y: " + accelY + " Z: " + accelZ);
 }
 
 /**
@@ -353,19 +357,18 @@ function readDataMotionRaw() {
  * aka, acceleration, gyroscope and euler
  */
 function readDataImpact() {
-    //console.log("Reading impact data");
     const { value } = this;
     const type = value.getInt16(0, littleEndian);
     switch (type) {
         case 0:
             // Acceleration
-            const accelX = value.getInt16(2, littleEndian) / 1024;
-            const accelY = value.getInt16(4, littleEndian) / 1024;
-            const accelZ = value.getInt16(6, littleEndian) / 1024;
+            const accelX = value.getInt16(2, littleEndian) / ScaleAcc;
+            const accelY = value.getInt16(4, littleEndian) / ScaleAcc;
+            const accelZ = value.getInt16(6, littleEndian) / ScaleAcc;
             // Gyroscope
-            const gyroX = value.getInt16(8, littleEndian) / 2048;
-            const gyroY = value.getInt16(10, littleEndian) / 2048;
-            const gyroZ = value.getInt16(12, littleEndian) / 2048;
+            const gyroX = value.getInt16(8, littleEndian) / ScaleGyro;
+            const gyroY = value.getInt16(10, littleEndian) / ScaleGyro;
+            const gyroZ = value.getInt16(12, littleEndian) / ScaleGyro;
             arrAccelX.push(accelX);
             arrAccelY.push(accelY);
             arrAccelZ.push(accelZ);
@@ -374,21 +377,18 @@ function readDataImpact() {
             arrGyroZ.push(gyroZ);
             break;
         case 1:
-            console.log(value);
-            var roll = value.getInt16(2, littleEndian) << 16;
-            console.log("Roll:" + roll);
-            roll |= value.getInt16(4, littleEndian);
-            roll /= 65536;
-            var pitch = value.getInt16(6, littleEndian) << 16;
-            pitch |= value.getInt16(8, littleEndian);
-            pitch /= 65536;
-            var yaw = value.getInt16(10, littleEndian) << 16;
-            yaw |= value.getInt16(12, littleEndian);
-            yaw /= 65536;
+            var integer = value.getInt16(2, littleEndian);
+            var decimal = value.getInt16(4, littleEndian) / ScaleEuler;
+            const roll = integer + decimal;
+            var integer = value.getInt16(6, littleEndian);
+            decimal = value.getInt16(8, littleEndian) / ScaleEuler;
+            const pitch = integer + decimal;
+            integer = value.getInt16(10, littleEndian);
+            decimal = value.getInt16(12, littleEndian) / ScaleEuler;
+            const yaw = integer + decimal;
             arrRoll.push(roll);
             arrPitch.push(pitch);
             arrYaw.push(yaw);
-            console.log("Euler:" + roll + ": " + pitch + ": " + yaw);
             break;
     }
 }
@@ -398,13 +398,12 @@ function readDataImpact() {
  */
 function readDataEuler() {
     const { value } = this;
-    const roll = value.getInt32(0, littleEndian) / 65536;
-    const pitch = value.getInt32(4, littleEndian) / 65536;
-    const yaw = value.getInt32(8, littleEndian) / 65536;
+    const roll = value.getInt32(0, littleEndian) / ScaleEuler;
+    const pitch = value.getInt32(4, littleEndian) / ScaleEuler;
+    const yaw = value.getInt32(8, littleEndian) / ScaleEuler;
     arrRoll.push(roll);
     arrPitch.push(pitch);
     arrYaw.push(yaw);
-    console.log("E:" + roll);
 }
 
 /**
