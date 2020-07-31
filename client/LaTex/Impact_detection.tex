@@ -1,14 +1,264 @@
-redistribucion de la memoria
-cambiar rango de acelerometro
-\section{BLE explicado}\label{sc:ble}
-limita de frecuencia de los sensores
-Enviar por los canales existentes a menor frecuencia
-Enviar por nuevo canal a mas frequencia pero mas tiempo
-Falta de memoria para crear varios modos.
-rtt viewer
+In this chapter, we are going to discuss how we acquire data, how we process it and how we transmit it. Furthermore, in order to understand how data is transmitted, we will also explain \gls{ble}.
 
-\section{Data acquisition}
+Having impact detection done in the Thingy has multiple benefits and one major downside. On the one hand, there is battery consumption. Idling \gls{ble} between impacts instead of a continuous data stream is remarkably valuable. Additionally, we are taking advantage of the \gls{soc}'s processing power to detect impacts, which lowers post-processing. On the other hand, memory is affected; we need to store some data in case it precedes impact. That takes a heavy toll in the limited available memory.
 
-\section{¿Parte del código? ¿Todo en un apéndice?}
+\section{BLE}\label{sc:ble}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{gatt_profile}
+	\caption{\gls{gatt}-Based Profile hierarchy}
+	\label{fig:gatt}
+\end{figure}
+First of all, \gls{ble} is independent of \bt and has no compatibility; nonetheless, they can coexist. Compared to \bt, \gls{ble} is designed to maintain a similar communication range while considerably reducing power consumption. All \gls{ble} devices use \gls{gatt}. The \gls{api} offered by \gls{ble} is usually based on \gls{gatt}. The Thingy is no exception to this rule. \fg{fig:gatt}, we can see a \gls{gatt}-based profile hierarchy. \gls{gatt} has many concepts; however, we only need to know a few to understand the basics of \gls{ble}:
 
-\section{data}
+\subsection{Service}
+The \bt Core Specification defines a service like this \cite{bluetoothspecs}:
+\begin{displayquote}
+A service is a collection of data and associated behaviors to accomplish a particular function or feature of a device or portions of a device. A service may include other primary or secondary services and/or a set of characteristics that make up the service. 
+
+There are two types of services: primary and secondary. A primary service is a service that provides the primary functionality of a device. A secondary service is a service that provides auxiliary functionality of a device and is included from at least one primary service on the device. 
+
+To maintain backward compatibility with earlier clients, later revisions of a service definition can only add new included services or optional characteristics. Later revisions of a service definition are also forbidden from changing behaviors from previous revision of the service definition.
+
+Services may be used in one or more profiles to fulfill a particular use case.
+\end{displayquote}
+
+In other words, a service encapsulates sets of data with something in common. For instance, the Thingy's Environment service has the data from the environmental sensors.
+\subsection{Characteristic}
+The \bt Core Specification defines a characteristic like this \cite{bluetoothspecs}:
+\begin{displayquote}
+A characteristic is a value used in a service along with properties and configuration information about how the value is accessed and information about how the value is displayed or represented. A characteristic definition contains a characteristic declaration, characteristic properties, and a value. It may also contain descriptors that describe the value or permit configuration of the server with respect to the characteristic value.
+\end{displayquote}
+
+In other words, a characteristic is one of the service's data sets. For instance, the Thingy's temperature characteristic has the data from the temperature sensor.
+
+\subsection{\gls{uuid}}
+\gls{uuid} is a unique number used to identify services, characteristics, and descriptors. These IDs are transmitted over the air so that a peripheral or sensor can inform a client what services it provides. To save transmitting air time and memory space in the \gls{soc}, we have two kinds of \gls{uuid}s: 128-bit and 16-bit ones \cite{uuid}:
+
+The 16-bit one is energy and memory efficient, but since it only provides a relatively limited number of unique combinations, we need large type of \gls{uuid}s.
+
+The 128-bit one sometimes referred to as a vendor-specific \gls{uuid}. This is the type of UUID we need to use when making custom services and characteristics. In the Thingy case, the \gls{uuid} looks like $EF68XXXX-9B35-4933-9B10-52FFA9740042$. This representation is called base \gls{uuid}, where the four X's represent where the 16-bit \gls{uuid}s for the custom services and characteristics will go. By using the base \gls{uuid}, we only need to store it once and work with the 16-bit \gls{uuid}s instead. For instance, the \gls{uuid} for the Environment service is $0x0300$ and $0x0301$ for the temperature characteristic.
+
+\subsection{Data size}
+The data field in a \gls{ble} packet is dependant on the \bt specification. Versions above v4.2 allow up to 255 bytes whereas earlier versions allow a maximum of 27 bytes, which is our case. \gls{l2cap}'s header is fixed at 4 bytes. When the maximum field size is 27 bytes, this allows for a maximum of 23 bytes of \gls{att} data per \gls{ble} packet \cite{blesize}. In the firmware's code fragment \ref{cd:ble_size}, we can see the maximum size defined as 23 bytes.
+
+\lstinputlisting[firstline = 57, lastline = 57, style=customc, caption=\gls{ble}'s maximum number of bytes per packet defined in $ble\_gatt.h$, label=cd:ble_size]
+{../../sdk_components/softdevice/s132/headers/ble_gatt.h}
+
+
+Furthermore, the 23 bytes is not \gls{ble}'s only limitation, as the minimum transmission time is 3ms \cite{bletime}, this translates to 333 packets per second. However, it is noteworthy that Nordic has limited the transmission frrequency to 200Hz. There is no official reason why, but we reckon that it has to do with the transmission time. 3ms is the minimum, but it is incredibly likely that larger packets take longer. Increasing the transmission frequency any further restarts the Thingy shortly after. Since too many notifications are queued, an error occurs as a result of not having enough resources for operation. In the firmware's code fragment \ref{cd:ble_resources}, we can see the aforementioned error.
+
+\lstinputlisting[firstline = 78, lastline = 78, style=customc, caption=NRF\_ERROR\_RESOURCES defined in $nrf\_error.h$, label=cd:ble_resources]
+{../../sdk_components/softdevice/s132/headers/nrf_error.h}
+
+\section{Methods}\label{sc:methods}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{No_Space}
+	\caption{Compilation error when too much memory is required}
+	\label{fig:no_space}
+\end{figure}
+We considered two different methods on how to address impact detection, each with their advantages and disadvantages. Both methods apply the same logic in the backend, which is circular arrays. Each circular array stores the latest n values of a sensor, where
+\begin{equation}\label{eq:array_samples}
+	n = Fs * t_{window} + 1,
+\end{equation}
+where $Fs$ is the sensor's sampling frequency, and $t_{window}$ is the impact's window in seconds. The creation of these arrays has such an impact on the memory that we need to redistribute the memory allocation. We decreased the heap size and increased the stack size accordingly in the assembly startup file.
+
+The first approach is to use the existing characteristics. Once an impact is detected, the Thingy sends the data through those characteristics. The main problem with this approach is the transmission frequency. The frequency is indirectly proportional to the number of characteristics used, which follows the relation below,
+\begin{equation*}
+	Fs =  \frac{200}{n},
+\end{equation*}
+where n is the number of characteristics used.
+
+The second approach is to create a new characteristic. The main problem with this approach is transmission time. By using only one channel, we can keep the transmission frequency at its maximum value, independent of the number of sensors. However, the total transmission time for an impact will increase by a factor of $n$, where $n$ is the number of sensors. Furthermore, in order to send data from multiple sensors through one channel, we need to create a queue to avoid the error described in the previous section. Once an impact is detected, the queue will store the values from the different sensors and deliver them to the new characteristic.
+
+We chose the latter method since we value transmission frequency more as well as the fact that we do not expect consecutive impacts within a few seconds.
+
+Both methods can be theoretically implemented for all sensors in the Thingy, and have multiple options, where each one sends data from a different subset of sensors. However, if we try to implement this, more versatile, way, we run out of memory. \fg{fig:no_space}, we can see the compilation error that occurs when we attempt to use too much memory. Unluckily, there is no way to redistribute memory allocation that allows that high of a consumption.
+
+\section{Data acquisition by the Thingy}
+
+The first step in data acquisition is knowing which data to acquire. Most \gls{ml} classification algorithms used by \gls{gust} require three types of data: acceleration (x, y, and z), gyroscope (x, y, and z), and Euler angles (roll, pitch, and yaw). Having this information, we can create the required circular arrays.  In the firmware's code fragment \ref{cd:m_impact}, we can see the struct used for the data acquisition.
+
+\lstinputlisting[firstline = 148, lastline = 164, style=customc, caption=m\_impact struct defined in $drv\_motion.c$, label=cd:m_impact]
+{../../source/drivers/drv_motion.c}
+
+The array size is created by substituting the maximum values into equation \ref{eq:array_samples}. The three indexes define where to save the current values, where the impact has occurred and where to get the values for the queue.
+
+\section{Data processing}
+The first step is defining what an impact is. For this case, we determine that an impact occurs when the acceleration's magnitude is above a threshold. We added an extra byte to the configuration characteristic so that users can modify this threshold the same way as other parameters. Before doing any of this, we needed to change the acceleration range from  $\{-2g, 2g\}$ to $\{-16g, 16g\}$. After sampling and storing data from the sensors, an example of which can be seen in the code fragment \ref{cd:read_gyro}, we have to decide if an impact has occurred.
+
+\lstinputlisting[linerange={1271-1283}, style=customc, caption=data sampling example in $drv\_motion.c$, label=cd:read_gyro]
+{../../source/drivers/drv_motion.c}
+
+If the current acceleration is above the established threshold, we compare it to the previous one to find a local maximum. Once we find a maximum, we determine that an impact has occurred and start enqueueing the sensor data, an example of which can be seen in code fragment \ref{cd:data_enqueue}.
+
+\lstinputlisting[linerange={1299-1314}, style=customc, caption=data enqueueing example in $drv\_motion.c$, label=cd:data_enqueue]
+{../../source/drivers/drv_motion.c}
+
+\section{Data transmission}
+
+Data transmission starts when the queue's size is different from zero. To start the transmission, we first need to create the new characteristic mentioned. First, we assign a \gls{uuid} to it. Second, we specify all of its properties. Then, we define the data structure it will use. Next, we add it to the Motion service. Finally, we create the function for sending impact data. We can see the data structure definition in code fragment \ref{cd:ble_tms_impact_t}. 
+
+\lstinputlisting[linerange={160-172}, style=customc, caption=ble\_tms\_impact\_t defined in $ble\_tms.h$, label=cd:ble_tms_impact_t]
+{../../include/ble_services/ble_tms.h}
+
+It is defined bizarrely due to the pre-existing firmware, which forces each characteristic to have a predefined data size. Every other characteristic in any service only has one type of data, may that be acceleration, configuration values or battery level. Conversely, this new characteristic alternates what type of data it handles. Therefore, we need a variable that lets us know the data type. The other variables in the structure are for the impact data, which alternates from acceleration and rotation to Euler angles. Luckily, the sampled data is 24-bytes long, and we can evenly split it in half.
+
+Once the new characteristic is set and done, we can use it to send data. First, we set the data type we are sending, and then we dequeue the first 12 bytes from the queue, an example of which can be seen in code fragment \ref{cd:data_dequeue}. Then, we generate the impact event that will trigger the event handler. Lastly, the event handler will call the characteristics function to send data.
+
+\lstinputlisting[linerange={1342-1352}, style=customc, caption=data dequeueing example in $drv\_motion.c$, label=cd:data_dequeue]
+{../../source/drivers/drv_motion.c}
+
+\section{Data acquisition by the laptop}
+As we already know, the Thingy interacts with the computer via Web \bt, which is handy, but it makes acquiring data quite tricky. To begin with, we cannot use the \gls{api} developed by Nordic for two reasons. First, since it is their website, we cannot make any changes to it that would allow us to store the data. Second, when we try to connect to the \gls{api}, it detects that the Thingy has custom firmware and denies access to it. Consequently, we have designed a custom Web \bt \gls{api} to interact with the Thingy.
+
+The created website is a simple \gls{ui}. It allows users to connect to the Thingy, adjust the configuration for the Motion and Environment Service, and start and stop data recording. The website uses HTML \ap{cd:Thingy.php} and JavaScript \ap{cd:Thingy.js}, with a small contribution of PHP to make the code look neat \ap{cd:Helper.php} \ap{cd:TagIds.php}. Once data recording starts, the JavaScript receives, converts to the desired units and stores the data in arrays until we stop recording. Since Javascript is a client-side scripting language, saving the stored data in the computer is not feasible. Though, there is a workaround; submitting a form using a post method. Employing the form, we can pass the stored data from JavaScript to PHP via HTML and save it as a \gls{csv} file. Before moving the data from JavaScript, we need to format it in a way that PHP will be able to interpret. To do that, we concatenate the data from each array into strings, separating each value with the \gls{csv} separator, and set them as field values in the website. After we submit the form, we retrieve the data, as well as some Thingy parameters and save them to a file \ap{cd:DataSave.php}.
+
+In order to launch the website, we need a server. We use the Apache HTTP Server that comes integrated with XAMPP. Once its setup and running, we can access the website. \fg{fig:webpage}, we can see the website and all its options.
+
+\section{Data analysis}
+
+Before examining data, we have to make sure that sensor values used by the Thingy to determine impact are the right ones \ap{accCalibration}. To decide if an impact occurs, we are using the accelerometer's output. A straightforward way of testing the accuracy of the accelerometer is to leave it still and see if the output is 1 G in gravity's direction, and 0 in perpendicular directions. \fg{fig:acc_cal}, we have measured the acceleration in X, Y, and Z. There are six subfigures, one per Thingy face or two per axis. It is clear that the accelerometer works correctly and can be used to detect impacts. Please note that due to \cov, we have had limited resources, and have hence only been able to demonstrate the proper functioning of the other sensors empirically. After establishing that the accelerometer works accurately, we can start analysing the data.
+
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationXUp}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationXDown}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+\end{figure}
+
+\begin{figure}[hbt!]\ContinuedFloat
+	\centering
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationYUp}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationYDown}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+\end{figure}
+
+\begin{figure}[hbt!]\ContinuedFloat
+	\centering
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationZUp}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{CalibrationZDown}
+		%\caption{Acceleration measurement for}
+		%\label{fig:cal}
+	\end{subfigure}
+	\caption{Acceleration measurements with Thingy at rest}
+	\label{fig:acc_cal}
+\end{figure}
+
+For this data analysis \ap{cd:readImpact}, we are going to examine three distinct measurements. The data in questions is of a novice boxer throwing jab punches while holding the Thingy inside his fist. Each measurement consists of four punches. The only difference between measurements is the used impact threshold.
+
+\fg{fig:impact_mag}, we can see the acceleration's magnitude for each case. Each plot has a dashed horizontal line corresponding to the threshold, and the $x$s indicate the impact's peak according to the Thingy. 
+
+For the first measurement, subfigure \ref{fig:high_mag}, we set the threshold at 6 Gs. In this case, each punch's data is perfectly centred at $t = 0$. Therefore, we have the same number of samples before and after impact for each one.
+
+For the second measurement, subfigure \ref{fig:medium_mag}, we set the threshold at 4 Gs. In this case, only one punch is centred at $t = 0$. For the other punches, there is a local maximum above the threshold before the absolute one, shifting the real impact.
+
+For the third measurement, subfigure \ref{fig:low_mag}, we set the threshold at 3 Gs. In this case, we identify the local maximum as the punch each time, shifting the real ones. Even though this case seems legit at first, albeit having more samples before than after; if we take a closer look, the maximum is at a different value of $t$ each time.
+\begin{figure}[hbt!]
+	\begin{subfigure}{1\linewidth}
+		\centering
+		\includegraphics[width=\textwidth]{High_Magnitude}
+		\caption{Threshold @ 6 Gs}
+		\label{fig:high_mag}
+	\end{subfigure}
+	\begin{subfigure}{1\linewidth}
+		\centering
+		\includegraphics[width=\textwidth]{Medium_Magnitude}
+		\caption{Threshold @ 4 Gs}
+		\label{fig:medium_mag}
+	\end{subfigure}
+	\begin{subfigure}{1\linewidth}
+		\centering
+		\includegraphics[width=\textwidth]{Low_Magnitude}
+		\caption{Threshold @ 3 Gs}
+		\label{fig:low_mag}
+	\end{subfigure}
+	\caption{Impact detection metric at different Thresholds}
+	\label{fig:impact_mag}
+\end{figure}
+
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{High_Acceleration}
+	\caption{Threshold @ 6 Gs}
+	\label{fig:high_acc}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Medium_Acceleration}
+	\caption{Threshold @ 4 Gs}
+	\label{fig:medium_acc}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Low_Acceleration}
+	\caption{Threshold @ 3 Gs}
+	\label{fig:low_acc}
+\end{figure}
+
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{High_Rotation}
+	\caption{Threshold @ 6 Gs}
+	\label{fig:high_rot}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Medium_Rotation}
+	\caption{Threshold @ 4 Gs}
+	\label{fig:medium_rot}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Low_Rotation}
+	\caption{Threshold @ 3 Gs}
+	\label{fig:low_rot}
+\end{figure}
+
+
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{High_Euler}
+	\caption{Threshold @ 6 Gs}
+	\label{fig:high_euler}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Medium_Euler}
+	\caption{Threshold @ 4 Gs}
+	\label{fig:medium_euler}
+\end{figure}
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\textwidth]{Low_Euler}
+	\caption{Threshold @ 3 Gs}
+	\label{fig:low_euler}
+\end{figure}
+
+

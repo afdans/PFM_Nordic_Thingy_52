@@ -1,0 +1,68 @@
+Prototyping is an experimental process where ideas are implemented into tangible forms. Conventionally, building a prototype with sensors involves components such as a \gls{fpga} and a breadboard, along with multiple sensors and cables. This method leads to a bulky prototype, which is not a deal-breaker for many applications, but it is in the case of wearable sensors. Wearable sensors are meant to be light to bother the users as little as possible and allow them to perform the intended activity the same way as if there was no sensor.
+
+One way to achieve a wearable prototype is to design and manufacture a custom \gls{pcb}. This approach is expensive and slow, since different iterations of a prototype may require redesigning and manufacturing a new \gls{pcb}, increasing the cost and length of the project. 
+
+Another way to achieve a wearable prototype is by using an off the shelf sensor kit, that has a multitude of built-in sensors, such as the Nordic Thingy:52. This approach provides a cheap alternative to custom \gls{pcb} design. This type of kits are undoubtedly versatile not only can be repurposed for future projects but also comes with the essential firmware already written. Having a common codebase is a feature that should not be underestimated. Not only does it prevent users from having to write an essential share of code but also means that there is an online community that is familiar with the firmware.
+ Additionally, even though the Thingy is not as small as a custom PCB would be, it is small enough to suffice without one for some applications. However, there are some drawbacks to this approach; for one, there are only the sensors that the manufacturer decided.
+
+In table \ref{tb:swot}, a summary of the \gls{swot} analysis of using an off the shelf sensor kit over a custom \gls{pcb} is shown:
+
+\begin{table}[htbp!]
+	\centering
+	\begin{tikzpicture}[
+	    any/.style={minimum width=5cm,minimum height=5cm,
+	                 text width=5cm,align=center,outer sep=0pt},
+	    header/.style={any},
+	    leftcol/.style={any},
+	    mycolor/.style={fill=#1, text=#1!75!black}
+	]
+
+	\matrix (SWOT) [matrix of nodes,nodes={any,anchor=center},
+	                column sep=-\pgflinewidth,
+	                row sep=-\pgflinewidth,
+	                inner sep=0pt]
+	{
+	|[mycolor=S]| \back{S} & |[mycolor=W]| \back{W} \\
+	|[mycolor=O]| \back{O} & |[mycolor=T]| \back{T} \\
+	};
+	\node[any, anchor=center] at (SWOT-1-1) {
+\begin{itemize}
+	\centering
+	\item Off the shelf
+	\item Fast development
+	\item Online community help
+	\item Reusability
+	\item Versatility
+\end{itemize} };
+	\node[any, anchor=center] at (SWOT-1-2) {
+\begin{itemize}
+	\centering
+	\item Bulkier
+	\item Predetermined sensors
+	\item Less memory
+\end{itemize} };
+	\node[any, anchor=center] at (SWOT-2-1) {
+\begin{itemize}
+	\centering
+	\item Accesible for users without knowledge of \gls{pcb} design
+\end{itemize} };
+	\node[any, anchor=center] at (SWOT-2-2) {
+\begin{itemize}
+	\centering
+	\item Uncomfortable to wear
+	\item Development of unnatural patterns in motion
+\end{itemize} };
+	\end{tikzpicture}
+	\caption{\gls{swot} analysis.}
+	\label{tb:swot}
+\end{table}
+
+
+\section{Roadmap}
+The reason behind this project has to do with \gls{gust} laboratories current interests. They are interested in the development of \gls{ml} algorithms which track changes in linear sports activities (running, race-walking, swimming, cycling and more) and muscular degenerative diseases (MS, Parkinson's and more) from body-mounted sensors.
+
+In this project, we want to develop firmware and software to be used for the acquisition, processing and transmission of movements from an athlete mounted platform. The project is made up of two smaller projects, which is one way of showing reusability and versatility. The first will be to use the Thingy as an impact detector. That is, to send data from different sensors from before and after the impact occurs.
+
+The second will be to use Thingy for sonification purposes. That is, use the built-in speaker to provide live feedback from the sensors by streaming different tones. It is crucial to ensure that the project will have a positive effect on athletic performance. That is why former professional athletes will be included in some testings so they can present their impressions and provide useful feedback.
+
+

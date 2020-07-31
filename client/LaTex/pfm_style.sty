@@ -1,0 +1,206 @@
+\ProvidesPackage{pfm_style}
+
+\usepackage[backend=biber, sorting=none]{biblatex}
+\usepackage{color}
+\usepackage{titlesec}
+\usepackage[acronym]{glossaries}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{titlesec}
+\usepackage{pdfpages}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{lastpage}
+\usepackage{amssymb}
+\usepackage{emptypage}
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{amsmath}
+%\usepackage{hyperref}
+
+\geometry{
+	a4paper,
+	total={155mm,232mm},
+	left=30mm,
+ 	top=35mm,
+}
+
+\fancypagestyle{arabicstyle}{
+	\fancyhf{}
+	\fancyhead[LE]{\small Wearable sensor developments using the Nordic Thingy 52 IOT Sensor Kit}
+	\fancyhead[RO]{\small Alejandro Fernández-Dans Goicoechea}
+	\fancyfoot[C]{Page \thepage\ of \pageref{LastPage}}
+	\renewcommand{\headrulewidth}{1pt}
+}
+
+\fancypagestyle{romanstyle}{
+	\fancyhf{}
+	\cfoot{\thepage}
+	\renewcommand{\headrulewidth}{0pt}
+}
+
+\let\origdoublepage\cleardoublepage
+\newcommand{\clearemptydoublepage}{
+  \clearpage{\thispagestyle{empty}\cleardoublepage}
+}
+
+\titleformat{\chapter}[display]{\normalfont\bfseries}{}{0pt}{\Huge}
+
+\addbibresource{References.bib}
+
+\graphicspath{ {./Fotos/} }
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\loadglsentries{acronyms}
+
+\newcommand\figWidthApp{4.5 cm}
+\newcommand\figWidth{12 cm}
+\newcommand\fg[1]{In Figure \ref{#1}}
+\newcommand\bt{Bluetooth }
+\newcommand\cov{COVID-19}
+\newcommand\setbodystyle{
+	\fancypagestyle{plain}{
+		\fancyhf{}
+		\fancyfoot[C]{Page \thepage\ of \pageref{LastPage}}
+		\renewcommand{\headrulewidth}{0pt}
+	}
+	\pagestyle{arabicstyle}
+	\setcounter{page}{1}
+	\renewcommand{\thepage}{\arabic{page}}
+}
+
+\newcommand\setforewordstyle{
+	\setcounter{page}{1}
+	\renewcommand{\thepage}{\roman{page}}
+	\pagestyle{romanstyle}
+}
+\newcommand\ap[1]{(Appendix \ref{#1})}
+
+\usetikzlibrary{matrix}
+
+\colorlet{helpful}{lime!70}
+\colorlet{harmful}{red!30}
+\colorlet{internal}{yellow!20}
+\colorlet{external}{cyan!30}
+\colorlet{S}{helpful!60!internal}
+\colorlet{W}{harmful!70!internal}
+\colorlet{O}{helpful!50!external}
+\colorlet{T}{harmful!50!external}
+
+\newcommand{\back}[1]{\fontsize{90}{100}\selectfont #1}
+
+\captionsetup{justification=centering}
+
+\definecolor{dkgreen}{rgb}{0, 0.6, 0}
+\definecolor{gray}{rgb}{0.5, 0.5, 0.5}
+\definecolor{statements}{rgb}{0.69, 0, 0.86}
+\definecolor{darkblue}{rgb}{0, 0, 1}
+\definecolor{variables}{rgb}{0, 0.06, 0.56}
+\definecolor{functions}{rgb}{0.47, 0.37, 0.15}
+\definecolor{signature}{rgb}{0.15, 0.5, 0.6}
+\definecolor{string}{rgb}{0.64, 0.08, 0.08}
+
+\lstset{
+	aboveskip = 3mm,
+	belowskip = 3mm,
+ 	belowcaptionskip=1\baselineskip,
+  	xleftmargin=\parindent,
+	showstringspaces = false,
+	columns = flexible,
+	captionpos=b,
+	numbers = none,
+	numberstyle = \tiny\color{gray},
+	breaklines = true,
+	breakatwhitespace = true,
+	tabsize = 3,
+	stringstyle=\color{string},
+	basicstyle=\footnotesize\ttfamily,
+	commentstyle=\itshape\color{dkgreen},
+	showstringspaces=false,
+	keywordstyle=\color{statements},
+	keywordstyle=[2]\color{darkblue},
+	keywordstyle=[3]\color{variables},
+	keywordstyle=[4]\color{functions},
+	keywordstyle=[5]\color{signature},
+	numbers=left,
+	stepnumber=5,
+}
+
+\lstdefinestyle{customc}{
+	language=C,
+	numbers=none,
+	deletekeywords=[1]{float, long, static, struct, typedef},
+	morekeywords=[2]{uint8_t, uint16_t, uint32_t, int8_t, int16_t, int32_t, float, bool, long, static, struct, typedef},
+	morekeywords=[3]{m_impact, acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z, roll, pitch, yaw, data, currentIndex, writeIndex, impactIndex, impact, previousAcceleration, data, m_motion, motion_freq_hz, m_impact_queue, size, entryIndex, exitIndex},
+	morekeywords=[4]{drv_motion_read_impact_gyroscope, inv_get_sensor_type_gyro, drv_motion_queue_add, drv_motion_queue_add_acceleration, drv_motion_queue_add_gyroscope, drv_motion_queue_add_euler, PACKED},
+	morekeywords=[5]{inv_time_t, ble_tms_impact_sub_t, ble_tms_impact_t}
+}
+
+\lstdefinestyle{customphp}{
+	language=php,
+	keywordstyle=[5]\color{string},
+	deletekeywords=[1]{define, echo, fclose, switch, round},
+	morekeywords=[1]{return},
+	morekeywords=[2]{function, __DIR__},
+	morekeywords=[3]{$name, $nameArray, $id, $checked, $_SERVER, $useDate, $_POST, $environmentFileName, $myFileEnvironment, $environment, $motionFileName, $myFileMotion, $motion, $temp, $pressure, $humidity, $gas, $environment, $quat, $accel, $gyro, $mag, $rawMotion, $euler, $data, $filepath, $date, $filename},
+	morekeywords=[4]{define, echo, createTagFromArray, createTag, createToggleSwitch, date_default_timezone_set, isset, openFile, getEnvironmentData, fwrite, fclose, getMotionData, header, date},
+	morekeywords=[5]{switch, round, checkbox, slider},
+	morestring=[s]{<}{?php},
+	morestring=[s][\color{string}]{\\"}{\"},
+	morestring=[s][\color{string}]{\"}{\\"},
+	morestring=[s][\color{string}]{"}{"},
+}
+
+
+\lstdefinestyle{customphphtml}{
+	language=php,
+	keywordstyle=\color{string},
+	keywordstyle=[3]\color{red},
+	keywordstyle=[5]\color{statements},
+	deletekeywords=[1]{include, true, get_defined_constants, for, file},
+	otherkeywords={<, >, \/, ?},   
+	morekeywords=[2]{function, __DIR__, true},
+	morekeywords=[3]{lang, rel, type, href, charset, name, content, http-equiv, onclick, id, style, action, value, class, src},
+	morekeywords=[4]{get_defined_constants, createToggleSwitch},
+	morekeywords=[1]{!DOCTYPE, php, html, head, link, meta, title, body, h1, button, div, br, form, script, h2, p, select, option, input},
+	morekeywords=[5]{include},
+	morestring=[b][\color{blue}]{"},
+	alsoletter=-,
+}
+
+\lstdefinelanguage{JavaScript}{
+	keywords={typeof, new, catch, return, null, catch, switch, if, in, while, do, else, case, break, await},
+	keywords=[3]{function, var, const, true, false, async, this},
+	keywords=[4]{thingy, temperatureCharacteristic, pressureCharacteristic, humidityCharacteristic, gasCharacteristic, environmentConfigCharacteristic, motionConfigCharacteristic, quaternionCharacteristic, motionRawDataCharacteristic, eulerCharacteristic, impactCharacteristic, arrTemp, arrPressure, arrHumidity, arrGasCO2, arrGasTVOC, arrQuatW, arrQuatX, arrQuatY, arrQuatZ, arrAccelX, arrAccelY, arrAccelZ, arrGyroX, arrGyroY, arrGyroZ, arrMagX, arrMagY, arrMagZ, arrRoll, arrPitch, arrYaw, readTemperature, readPressure, readHumidity, readGas, readLight, readEuler, readQuaternion, readRawMotion, readImpact, navigator, bluetooth, filters, name, optionalServices, gatt, document, innerHTML, console, display, value, quatW, quatX, quatY, quatZ, Math, roll, pitch, yaw, gasInterval, formattedData, dataArray, checked, id},
+	keywords=[5]{getPrimaryService, getCharacteristic, UUID, getElementById, connect, disconnect, showConfigs, log, servicesInit, dataRecordStart, getDesiredSensors, addEventListener, startNotifications, dataRecordStop, removeEventListener, stopNotifications, setRecordedData, submitData, submit, join, readDataTemp, readDataPressure, readDataHumidity, readDataGas, readDataQuaternion, readDataMotionRaw, readDataImpact, readDataEuler, readEnvironmentConfig, readValue, displayEnvironmentConfig, readMotionConfig, displayMotionConfig, writeEnvironmentConfig, writeValue, writeMotionConfig, saveEnvironmentConfig, saveMotionConfig, displayEnvironmentConfig, displayMotionConfig, now, sqrt, push, getInt8, getUint8, getInt16, getUint16, getInt32},
+	keywords=[6]{CSVSeparator, littleEndian, EnvironmentID, TemperatureID, PressureID, HumidityID, GasID, ColorID, EnvironmentConfigID, MotionID, MotionConfigID, TapID, OrientationID, QuaternionID, StepCounterID, MotionRawDataID, EulerID, HeadingID, ImpactID, style, environmentService, motionService, forms, integer, decimal, temperature, pressure, RH, CO2, TVOC, magnitude, accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ, type, temperatureInterval, pressureInterval, humidityInterval, colorInterval, colorRed, colorGreen, colorBlue, stepCountInterval, tempCompensationInterval, magnetCompensationInterval, motionProcessFrequency, wakeOnMotion, impactThreshold, red, green, blue, Uint8Array, ScaleEnv, ScaleAcc, ScaleGyro, ScaleMag, ScaleEuler, ScaleQuat},
+	keywordstyle=\color{statements},
+	keywordstyle=[3]\color{darkblue},
+	keywordstyle=[4]\color{variables},
+	keywordstyle=[5]\color{functions},
+	keywordstyle=[6]\color{signature},
+	ndkeywords={class, export, boolean, throw, implements, import, this},
+	ndkeywordstyle=\color{darkgray}\bfseries,
+	identifierstyle=\color{black},
+	sensitive=false,
+	comment=[l]{//},
+	morecomment=[s]{/*}{*/},
+	morestring=[b]',
+	morestring=[b]",
+}
+
+\lstset{escapechar=¿}
+
+\renewcommand\lstlistingname{Code Fragment}
+\renewcommand\lstlistlistingname{Code Fragments}
+
+
