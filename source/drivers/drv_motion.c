@@ -159,8 +159,7 @@ static struct
     uint16_t currentIndex;
     uint16_t impactIndex;
     uint16_t writeIndex;
-    uint16_t type;
-    int32_t  previous_acceleration;
+    int32_t  previousAcceleration;
     bool     impact;
 } m_impact;
 
@@ -169,6 +168,7 @@ static struct{
     int16_t exitIndex;
     int16_t size;
     int16_t data[MAX_QUEUE_SIZE];
+    uint16_t type;
 } m_impact_queue;
 
 static struct
@@ -499,12 +499,12 @@ static void mpulib_data_send(void)
         drv_motion_read_impact_euler(&accuracy, &timestamp);
 
         if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
-            if (m_impact.previous_acceleration > current_acceleration){
+            if (m_impact.previousAcceleration > current_acceleration){
                     m_impact.impact = true;
                     m_impact.writeIndex = (m_impact.currentIndex + m_motion.motion_freq_hz) % (2 * m_motion.motion_freq_hz + 1);
                     m_impact.impactIndex = m_impact.writeIndex;
             } else{
-                m_impact.previous_acceleration = current_acceleration;
+                m_impact.previousAcceleration = current_acceleration;
             }
         }
 
@@ -512,24 +512,23 @@ static void mpulib_data_send(void)
             drv_motion_queue_add_acceleration();
             drv_motion_queue_add_gyroscope();
             drv_motion_queue_add_euler();
-            //Meter datos en la queue
             m_impact.writeIndex = (m_impact.writeIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
             if (m_impact.writeIndex == m_impact.impactIndex){
                 m_impact.impact = false;
-                m_impact.previous_acceleration = 0;
+                m_impact.previousAcceleration = 0;
             }
         }
 
         if (m_impact_queue.size){
             int16_t data[7];
-            data[0] = m_impact.type;
+            data[0] = m_impact_queue.type;
 
             for (uint8_t i = 1; i < 7; i++){
                 data[i] = drv_motion_dequeue();
             }
 
             evt = DRV_MOTION_EVT_IMPACT;
-            m_impact.type ^= 1;
+            m_impact_queue.type ^= 1;
             m_motion.evt_handler(&evt, data, sizeof(int16_t) * 7);
         }
         m_impact.currentIndex = (m_impact.currentIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
@@ -1145,12 +1144,12 @@ uint32_t drv_motion_init(drv_motion_evt_handler_t evt_handler, drv_motion_twi_in
     m_motion.impact_threshold      = DEFAULT_IMP_THR;
 
     m_impact.currentIndex          = 0;
-    m_impact.previous_acceleration = 0;
+    m_impact.previousAcceleration  = 0;
     m_impact.impact                = 0;
-    m_impact.type                  = 0;
     m_impact_queue.entryIndex      = 0;
     m_impact_queue.exitIndex       = 0;
     m_impact_queue.size            = 0;
+    m_impact_queue.type            = 0;
 
     err_code = drv_acc_init(&lis_init_params);
     RETURN_IF_ERROR(err_code);
