@@ -19,7 +19,7 @@
         <button id="dataRecordStartBTN" onclick="dataRecordStart();">Start Recording Data!</button><br>
         <button id="dataRecordStopBTN" onclick="dataRecordStop();">Stop Recording Data!</button><br>
         <form name="saveData" id="saveData" action="\PFM_Nordic_Thingy_52\client\WebPage\DataSave.php" method="post">  
-            Use data for file names <?php createToggleSwitch("useDate"); ?>
+            Use date for file names <?php createToggleSwitch("useDate"); ?>
             Save Environment: <input type="text" name="environmentFileName" value="dataEnvironment"><?php createToggleSwitch("saveEnvironment"); ?>
             Save Motion: <input type="text" name="motionFileName" value="Impact_test"><?php createToggleSwitch("saveMotion", 1); ?>
             <?php createTagFromArray(get_defined_constants(true)['user']); ?>
@@ -74,9 +74,6 @@
                 </p>
                 <p>Wake On Motion: <br>
                     <?php createToggleSwitch("wakeOnMotion"); ?>
-                </p>
-                <p>Impact Detection <br>
-                    <?php createToggleSwitch("impactDetection"); ?>
                 </p>
                 <p>Impact Threshold: (3 - 15 G)<br>
                     <input type="text" id="impactThreshold">
