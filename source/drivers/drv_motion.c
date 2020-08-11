@@ -141,7 +141,6 @@ static struct
     uint16_t                  compass_interval_ms;
     uint16_t                  motion_freq_hz;
     uint8_t                   wake_on_motion;
-    uint8_t                   impact_detection;
     uint16_t                  impact_threshold;
 } m_motion;
 
@@ -177,7 +176,7 @@ static struct
     uint16_t               duration;
     uint16_t               center_freq_hz;
     bool                   enabled;
-    bool                   sensitivity;
+    bool                   precision;
     int16_t                stationary;
     sonification_channel_t channel;
     sonification_sensor_t  sensor;
@@ -237,118 +236,109 @@ static void mpulib_data_send(void)
     drv_motion_evt_t evt;
 
     if (m_motion.features & DRV_MOTION_FEATURE_MASK_SONIFICATION){
-        int32_t frequency_offset;
-        bool    valid_data = false;
-        bool    reset = false;
-        int16_t sensitivity;
+        int32_t frequency_offset;   // How many Hz we offset the central frequency.
+        bool    valid_data = false; // True if we read valid data from the sensors.
+        bool    reset = false;      // True if we need to restart the spekear.
+        int16_t precision;          // Precision used for sensor data (decimals).
+        int16_t scaler;             // Used to scale all data equally in spite of precision.
+        int16_t bit_offset;         // Number of bits used to shift data.
 
+        // Read data from sensors and set other variables
         switch (m_sonification.sensor){
             case SONIFICATION_SENSOR_EULER:
                 if (inv_get_sensor_type_euler((long *)data, &accuracy, &timestamp)){
                     valid_data = true;
                 }
-                if(m_sonification.sensitivity){
-                    sensitivity = 4;
+                bit_offset = BIT_OFFSET_EULER;
+                if(m_sonification.precision){
+                    precision = PRECISION_EULER_HIGH;
+                    scaler = SCALER_EULER_HIGH;
                 }else{
-                    sensitivity = 1;
+                    precision = PRECISION_EULER_LOW;
+                    scaler = SCALER_EULER_LOW;
                 }
                 break;
             case SONIFICATION_SENSOR_RAW_ACCEL:
                 if (inv_get_sensor_type_accel((long *)&data[0], &accuracy, &timestamp)){
                     valid_data = true;
                 }
-                if(m_sonification.sensitivity){
-                    sensitivity = 30;
+                bit_offset = BIT_OFFSET_RAW_ACC;
+                if(m_sonification.precision){
+                    precision = PRECISION_ACC_HIGH;
+                    scaler = SCALER_ACC_HIGH;
                 }else{
-                    sensitivity = 10;
+                    precision = PRECISION_ACC_LOW;
+                    scaler = SCALER_ACC_LOW;
                 }
                 break;
             case SONIFICATION_SENSOR_RAW_GYRO:
                 if (inv_get_sensor_type_gyro((long *)&data[0], &accuracy, &timestamp)){
                     valid_data = true;
                 }
-                if(m_sonification.sensitivity){
-                    sensitivity = 50;
+                bit_offset = BIT_OFFSET_RAW_GYRO;
+                if(m_sonification.precision){
+                    precision = PRECISION_GYRO_HIGH;
+                    scaler = SCALER_GYRO_HIGH;
                 }else{
-                    sensitivity = 20;
+                    precision = PRECISION_GYRO_LOW;
+                    scaler = SCALER_GYRO_LOW;
                 }
                 break;
         }
 
+        // Convert output to Hz
         if (valid_data){
             switch(m_sonification.channel){
                 case SONIFICATION_CHANNEL_ROLL:
-                    frequency_offset = data[0] * sensitivity / NUMERICAL_OFFSET_EULER;
+                case SONIFICATION_CHANNEL_RAW_ACCEL_X:
+                case SONIFICATION_CHANNEL_RAW_GYRO_X:
+                    frequency_offset = (data[0] * precision) >> bit_offset;
+                    frequency_offset *= scaler;
                     break;
                 case SONIFICATION_CHANNEL_PITCH:
-                    frequency_offset = data[1] * sensitivity / NUMERICAL_OFFSET_EULER;
+                case SONIFICATION_CHANNEL_RAW_ACCEL_Y:
+                case SONIFICATION_CHANNEL_RAW_GYRO_Y:
+                    frequency_offset = (data[1] * precision) >> bit_offset;
+                    frequency_offset *= scaler;
                     break;
                 case SONIFICATION_CHANNEL_YAW:
-                    frequency_offset = data[2] * sensitivity / NUMERICAL_OFFSET_EULER;
-                    break;
-                case SONIFICATION_CHANNEL_RAW_ACCEL_X:
-                    frequency_offset = (int16_t)((data[0] * sensitivity) >> 6);
-                    frequency_offset = frequency_offset >> 10;
-                    break;
-                case SONIFICATION_CHANNEL_RAW_ACCEL_Y:
-                    frequency_offset = (int16_t)((data[1] * sensitivity) >> 6);
-                    frequency_offset = frequency_offset >> 10;
-                    break;
                 case SONIFICATION_CHANNEL_RAW_ACCEL_Z:
-                    frequency_offset = (int16_t)((data[2] * sensitivity) >> 6);
-                    frequency_offset = frequency_offset >> 10;
-                    break;
-                case SONIFICATION_CHANNEL_RAW_GYRO_X:
-                    frequency_offset = (int16_t)((data[0] * sensitivity) >> 11);
-                    frequency_offset = frequency_offset >> 12;
-                    break;
-                case SONIFICATION_CHANNEL_RAW_GYRO_Y:
-                    frequency_offset = (int16_t)((data[1] * sensitivity) >> 11);
-                    frequency_offset = frequency_offset / 2048;
-                    break;
                 case SONIFICATION_CHANNEL_RAW_GYRO_Z:
-                    frequency_offset = (int16_t)((data[2] * sensitivity) >> 11);
-                    frequency_offset = frequency_offset >> 12;
+                    frequency_offset = (data[2] * precision) >> bit_offset;
+                    frequency_offset *= scaler;
                     break;
                 default:
                     frequency_offset = 0;
                     break;
             }
 
+            // Edge cases correction
             switch (m_sonification.sensor){
                 case SONIFICATION_SENSOR_EULER:
-                    if (!m_sonification.sensitivity){
-                        frequency_offset = frequency_offset * 4;
-                    }
-                    break;
                 case SONIFICATION_SENSOR_RAW_ACCEL:
-                    if (m_sonification.sensitivity){
-                        frequency_offset = frequency_offset * 4;
-                    }else{
-                        frequency_offset = frequency_offset * 12;
+                    if (frequency_offset < MINIMUM_FREQUENCY_OFFSET){
+                        frequency_offset = MINIMUM_FREQUENCY_OFFSET;
                     }
                     break;
                 case SONIFICATION_SENSOR_RAW_GYRO:
                     frequency_offset = abs(frequency_offset);
-                    if (m_sonification.sensitivity){
-                        frequency_offset = frequency_offset * 5;
-                    }else{
-                        frequency_offset = frequency_offset * 12;
-                    }
-                    if (frequency_offset <= 20){
+                    // Count number of consecutive samples where there is no motion
+                    if (frequency_offset <= GYROSCOPE_MOVEMENT_THRESHOLD){
                         frequency_offset = -m_sonification.center_freq_hz;
                         m_sonification.stationary++;
                     }else{
-                        if (m_sonification.stationary > 2){
+                        // Reset Thingy speaker
+                        if (m_sonification.stationary >= GYROSCOPE_MOVEMENT_THRESHOLD_SAMPLES){
                             reset = true;
                         }
                         m_sonification.stationary = 0;
                     }
                     break;
             }
-            frequency_offset = 0;
             NRF_LOG_DEBUG("Offset is: %d\r\n", frequency_offset);
-            if (m_sonification.stationary == 6) {
+
+            // Stop sound as there is no motion
+            if (m_sonification.stationary == GYROSCOPE_MOVEMENT_THRESHOLD_SAMPLES) {
                 drv_speaker_tone_start(m_sonification.center_freq_hz , 0, 0);
             }else{
                 if (reset){
@@ -498,6 +488,7 @@ static void mpulib_data_send(void)
         // Euler
         drv_motion_read_impact_euler(&accuracy, &timestamp);
 
+        // Determine if impact ocurrs and its peak
         if (!m_impact.impact && current_acceleration > (m_motion.impact_threshold * m_motion.impact_threshold)){
             if (m_impact.previousAcceleration > current_acceleration){
                     m_impact.impact = true;
@@ -508,6 +499,7 @@ static void mpulib_data_send(void)
             }
         }
 
+        // Add impact values to queue
         if (m_impact.impact){
             drv_motion_queue_add_acceleration();
             drv_motion_queue_add_gyroscope();
@@ -519,6 +511,7 @@ static void mpulib_data_send(void)
             }
         }
 
+        // Send impact values to event handler
         if (m_impact_queue.size){
             int16_t data[7];
             data[0] = m_impact_queue.type;
@@ -531,6 +524,7 @@ static void mpulib_data_send(void)
             m_impact_queue.type ^= 1;
             m_motion.evt_handler(&evt, data, sizeof(int16_t) * 7);
         }
+
         m_impact.currentIndex = (m_impact.currentIndex + 1) % (2 * m_motion.motion_freq_hz + 1);
     }
 }
@@ -1191,7 +1185,7 @@ uint32_t drv_motion_enable_sonification(sonification_channel_t channel){
     m_sonification.stationary     = 0;
 
     drv_motion_sonification_set_volume(100);
-    drv_motion_sonification_set_sensitivity(0);
+    drv_motion_sonification_set_precision(0);
 
     drv_speaker_tone_start(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
     drv_speaker_multi_tone_update(m_sonification.center_freq_hz, m_sonification.duration, m_sonification.volume);
@@ -1238,8 +1232,8 @@ uint32_t drv_motion_sonification_set_channel(sonification_channel_t channel){
     return NRF_SUCCESS;
 }
 
-uint32_t drv_motion_sonification_set_sensitivity(bool high){
-    m_sonification.sensitivity = high;
+uint32_t drv_motion_sonification_set_precision(bool high){
+    m_sonification.precision = high;
 
     return NRF_SUCCESS;
 }

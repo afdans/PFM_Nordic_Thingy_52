@@ -119,9 +119,27 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define MAX_IMPACT_SAMPLES (MPU_FREQ_MAX * IMPACT_INTERVAL + 1)
 
 #define BIT_OFFSET_EULER 16
-#define BIT_OFFSET_RAW 16
-#define NUMERICAL_OFFSET_EULER (1 << BIT_OFFSET_EULER)
-#define NUMERICAL_OFFSET_RAW (1 << BIT_OFFSET_RAW)
+#define BIT_OFFSET_RAW_ACC 16
+#define BIT_OFFSET_RAW_GYRO 21
+
+#define PRECISION_EULER_HIGH 4
+#define PRECISION_EULER_LOW 1
+#define PRECISION_ACC_HIGH 30
+#define PRECISION_ACC_LOW 10
+#define PRECISION_GYRO_HIGH 50
+#define PRECISION_GYRO_LOW 20
+
+#define SCALER_EULER_HIGH 1
+#define SCALER_EULER_LOW 4
+#define SCALER_ACC_HIGH 4
+#define SCALER_ACC_LOW 12
+#define SCALER_GYRO_HIGH 5
+#define SCALER_GYRO_LOW 12
+
+#define GYROSCOPE_MOVEMENT_THRESHOLD 20
+#define GYROSCOPE_MOVEMENT_THRESHOLD_SAMPLES 6
+#define MINIMUM_FREQUENCY_OFFSET -900
+
 
 #define ACC_SIZE 3
 #define GYRO_SIZE 3
@@ -278,13 +296,13 @@ uint32_t drv_motion_disable_sonification();
  */
 uint32_t drv_motion_sonification_set_channel(sonification_channel_t channel);
 
-/**@brief Function that sets sonification's sensitivity
+/**@brief Function that sets sonification's precision
  *
- * @param[in] high   Bool that determines if sensitivity is low or high.
+ * @param[in] high   Bool that determines if precision is low or high.
  *
  * @retval NRF_SUCCESS.
  */
-uint32_t drv_motion_sonification_set_sensitivity(bool high);
+uint32_t drv_motion_sonification_set_precision(bool high);
 
 /**@brief Function that sets sonification's volume
  *
