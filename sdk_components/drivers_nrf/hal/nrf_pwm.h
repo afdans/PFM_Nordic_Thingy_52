@@ -655,12 +655,8 @@ __STATIC_INLINE void nrf_pwm_sequence_update_set(NRF_PWM_Type * p_reg,
 {
     ASSERT(p_seq != NULL);
 
-    nrf_pwm_seq_ptr_set(      p_reg, seq_id, p_seq->values.p_raw);
-    nrf_pwm_seq_cnt_set(      p_reg, seq_id, p_seq->length);
-    // Leer estas dos funciones para buscar que pita y 
-    // que no pete al mismo tiempo
-    //nrf_pwm_seq_refresh_set(  p_reg, seq_id, p_seq->repeats);
-    //nrf_pwm_seq_end_delay_set(p_reg, seq_id, p_seq->end_delay);
+    nrf_pwm_seq_ptr_set(p_reg, seq_id, p_seq->values.p_raw);
+    nrf_pwm_seq_cnt_set(p_reg, seq_id, p_seq->length);
 }
 
 __STATIC_INLINE void nrf_pwm_seq_ptr_set(NRF_PWM_Type * p_reg,
