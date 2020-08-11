@@ -1,0 +1,28 @@
+The next step in this project would be designing a \gls{pcb} for both applications, after finalising the tests. This custom \gls{pcb} would only have the components used in the Thingy, reducing the overall size. Additionally, reducing the number of components would also decrease memory usage. Without conducting due diligence, which is recommended before the design process, the required components would be:
+\begin{itemize}
+	\item nRF52832 \gls{soc}
+	\item Antenna
+	\item Button
+	\item Nine-axis motion sensor (MPU-9250)
+	\item Speaker
+	\item Programming and debugging connector
+	\item Battery connector
+	\item USB connector
+	\item Power switch
+\end{itemize}
+
+There would also be some optional components, that while not necessary for correct functioning, they would be worth considering, such as:
+\begin{itemize}
+	\item NFC antenna
+	\item Low power accelerometer
+	\item Configurable RGB LED
+\end{itemize}
+
+When designing the \gls{pcb}, we need to think about three factors.
+
+First, we need to minimise the impact the speaker has on the motion sensor, which would drastically improve the sonification's performance. 
+
+Second, we need to choose a battery. A larger battery would increase battery life at the cost of size and weight. 
+
+Third, it would be ideal if we could make it waterproof. Either by making a custom sealed box that allows sound to come out, or by making its dimensions in a way that fit in an existing box.
+
