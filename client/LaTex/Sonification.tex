@@ -1,10 +1,91 @@
-Work without bluetooth
-Sleep mode
-\section{beeping sound}
+Sonification denotes a way of receiving feedback from the Thingy's sensors, by adjusting the speaker's tone according to the sensor values. In this chapter, we will discuss how to make the Thingy work while being disconnected, how to create a menu to switch modes as well as tweaks made and trade-offs.
 
-\section{volume vs accuracy}
+The Thingy is designed exclusively to work while connected. All of its features are built to function when \bt is paired. Sonification could have quickly been done to function when connected. However, there is no real benefit to do it that way other than time. Exclusively working when \bt is connected, would consume more energy and would always require being within range of a device. The only impediment to this implementation is that we cannot start the sonification with our phones or laptops, and have to do it another way. We determined that the best method to do it is by pressing the Thingy's button. 
+
+\section{Beeping Sound}
+
+The fundamental concept in sonification is that we need to change the speaker's tone every time we get the sensor's output. If we use the given functions, the output we get s beeping sound every time we update the tone. If we update the tone at a low rate, i.e. 5Hz, the beeping sound is bearable. However, at a higher refresh rate, i.e. 100Hz, the beeping sound becomes dominant, making the actual tone indistinguishable. In code fragment \ref{cd:nrf_pwm_sequence_set}, we can see the original function to set the \gls{pwm} sequence, and the new function to set the updated \gls{pwm} sequence.
+
+\lstinputlisting[linerange={640-660}, firstnumber=640, style=customc, caption=pwm sequence setting functions defined in $nrf\_pwm.h$, label=cd:nrf_pwm_sequence_set]{../../sdk_components/drivers_nrf/hal/nrf_pwm.h}
+
+In code fragment \ref{cd:start_functions}, we have the functions provided by Nordic to playback a sequence.
+
+\lstinputlisting[linerange={205-210}, firstnumber=205, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={275-277}, firstnumber=275, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\lstinputlisting[linerange={353-358}, firstnumber=353, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={365-366}, firstnumber=365, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={392-394}, firstnumber=392, style=customc, caption=Existing functions defined in $nrf\_drv\_pwm.c$,  label=cd:start_functions]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+
+In code fragment \ref{cd:update_functions}, we have the newly created functions to update the sequence without the beeping sound.
+\lstinputlisting[linerange={280-285}, firstnumber=280, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={349-350}, firstnumber=349, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\lstinputlisting[linerange={442-447}, firstnumber=442, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={454-455}, firstnumber=454, style=customc, nolol]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={481-483}, firstnumber=481, style=customc, caption= New functions defined in $nrf\_drv\_pwm.c$,  label=cd:update_functions]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
+
+
+In code fragment \ref{cd:tone_start}, we have the function provided by Nordic to output a tone given a frequency, duration and volume, which calls the playback function.
+\lstinputlisting[linerange={489-491}, firstnumber=489, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={529-529}, firstnumber=529, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={535-536}, firstnumber=535, style=customc, caption= $drv\_speaker\_tone\_start$ defined in $drv\_speaker.c$,  label=cd:tone_start]{../../source/drivers/drv_speaker.c}
+
+In code fragment \ref{cd:tone_update}, we have the newly created function to output a new tone given a frequency, duration and volume, which calls the playback function.
+\lstinputlisting[linerange={538-540}, firstnumber=438, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={578-578}, firstnumber=578, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={584-585}, firstnumber=584, style=customc, caption= $drv\_speaker\_multi\_tone\_update$ defined in $drv\_speaker.c$,  label=cd:tone_update]{../../source/drivers/drv_speaker.c}
+
+Since a sound recording cannot be played on a pdf, the best next way to analyse the beeping sound is by checking the recording's spectrum \ap{cd:audioToSensor.m}. We are going to compare two 1000Hz tone recordings at a 100Hz refresh rate, one using the existing functions and the other one using the new ones. Additionally, using the spectrogram's data, we can obtain the frequency with the most power for any given time.
+In Figure \ref{fig:spectro}, we can see both spectrograms. Subfigure \ref{fig:spectro_no_beep} has a clear band where most of its power is, centred at 1000Hz, whereas \ref{fig:spectro_beep} also has a band, but it is less clear since the power is more evenly distributed.
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{no_beeping_spectro}
+		\caption{New functions}
+		\label{fig:spectro_no_beep}
+	\end{subfigure}
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{beeping_spectro}
+		\caption{Old functions}
+		\label{fig:spectro_beep}
+	\end{subfigure}
+	\caption{Spectrogram comparison}
+	\label{fig:spectro}
+\end{figure}
+
+In Figure \ref{fig:spectro_freq}, we can see both spectrograms with the dominant frequency outlined. It is clear that we only get a unique tone using the new functions (subfigure \ref{fig:spectro_freq_no_beep}), whereas the given functions give us the beeping sound as mentioned earlier (subfigure \ref{fig:spectro_freq_beep}).
+
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{no_beeping_spectro_freq}
+		\caption{New functions}
+		\label{fig:spectro_freq_no_beep}
+	\end{subfigure}
+	\begin{subfigure}{0.48\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{beeping_spectro_freq}
+		\caption{Old functions}
+		\label{fig:spectro_freq_beep}
+	\end{subfigure}
+	\caption{Spectrogram maximum frequency comparison}
+	\label{fig:spectro_freq}
+\end{figure}
+
+
+\section{Design trade-off}
 
 \section{feedback from Simon/swimmers}
 
-
-\lstinputlisting[firstline = 278, lastline = 299]{../../source/drivers/drv_motion.c}
