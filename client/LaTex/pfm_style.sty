@@ -105,6 +105,21 @@
 \colorlet{O}{helpful!50!external}
 \colorlet{T}{harmful!50!external}
 
+\newcounter{settings}
+\lstnewenvironment{settings}[1]{
+	\renewcommand\lstlistingname{Sonification settings}
+	\setcounter{lstlisting}{\value{settings}}
+	\lstset
+	{
+		language=Python,
+		basicstyle=\ttfamily,
+		frame = tb,
+		caption={[#1]{#1}},
+		nolol,
+		numbers=none,
+	}
+}{\addtocounter{settings}{1}}
+
 \newcommand{\back}[1]{\fontsize{90}{100}\selectfont #1}
 
 \captionsetup{justification=centering}

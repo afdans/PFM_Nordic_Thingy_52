@@ -1,4 +1,4 @@
-The next step in this project would be designing a \gls{pcb} for both applications, after finalising the tests. This custom \gls{pcb} would only have the components used in the Thingy, reducing the overall size. Additionally, reducing the number of components would also decrease memory usage. Without conducting due diligence, which is recommended before the design process, the required components would be:
+The next step in this project would be designing a \gls{pcb} suitable for both applications, after finalising the tests. This custom \gls{pcb} would only have the components used in the Thingy, reducing the overall size. Additionally, reducing the number of components would also decrease memory usage. Without conducting due diligence, which is recommended before the design process, the required components would be:
 \begin{itemize}
 	\item nRF52832 \gls{soc}
 	\item Antenna
@@ -8,7 +8,6 @@ The next step in this project would be designing a \gls{pcb} for both applicatio
 	\item Programming and debugging connector
 	\item Battery connector
 	\item USB connector
-	\item Power switch
 \end{itemize}
 
 There would also be some optional components, that while not necessary for correct functioning, they would be worth considering, such as:
@@ -16,13 +15,16 @@ There would also be some optional components, that while not necessary for corre
 	\item NFC antenna
 	\item Low power accelerometer
 	\item Configurable RGB LED
+	\item 3.5mm headphone jack
+	\item Humidity sensor
 \end{itemize}
 
-When designing the \gls{pcb}, we need to think about three factors.
+When designing the \gls{pcb}, we need to consider three factors. The first affects both applications indirectly, whereas the other two directly affect sonification.
 
-First, we need to minimise the impact the speaker has on the motion sensor, which would drastically improve the sonification's performance. 
+First, we need to choose a battery. The battery is the Thingy's largest component, so we would need to select a smaller one to reduce the new device's size, at the expense of battery life.
 
-Second, we need to choose a battery. A larger battery would increase battery life at the cost of size and weight. 
+Second, we need to minimise the impact the speaker has on the motion sensor, which would drastically improve the sonification's performance. The most straightforward approach is to use a headphone jack with a waterproof earbud instead of a speaker. To do it any other way, we would need to determine what causes the vibration and minimise it. One idea would be to change the distance between the speaker and the sensor. If we could learn if the vibration fades or increases as we move away from the speaker, we could place the sensor and speaker accordingly. Another idea for that would be to move the battery. In order to decide if this would be helpful, a straightforward test would be to break the current case, and have the battery not touch the \gls{pcb}, play sound from the speaker to see the effect it has on the vibration.
 
-Third, it would be ideal if we could make it waterproof. Either by making a custom sealed box that allows sound to come out, or by making its dimensions in a way that fit in an existing box.
+Third, it would be ideal if we could make it waterproof. If it were water-resistant, we would not rely on plastic bags to protect it. Either by making a custom sealed box that allows sound to come out, or by making its dimensions in a way that fit in an existing waterproof box.
 
+Other ideas could be implemented in the future. One could be to start sonification automatically when we enter the water. That would be possible if there were a way to attach a humidity sensor to the case's exterior. Because logic suggests that the humidity inside a sealed waterproof sensor does not change even if it is in the water.

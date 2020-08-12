@@ -87,5 +87,78 @@ In Figure \ref{fig:spectro_freq}, we can see both spectrograms with the dominant
 
 \section{Design trade-off}
 
-\section{feedback from Simon/swimmers}
+\section{Swimming test}
+
+\subsection{Preparation}
+First, we gave a Thingy with the sonification to a Senior Performance Scientist from \gls{qas} so that he could give us some feedback before the water test. He suggested if we could have the sound stop when the Thingy is at rest. We contemplated applying his suggestion to all the sensors. Implementing it for the gyroscope is not a challenge, as a resting object has no rotation. However, implementing it for the accelerometer is quite a challenge due to gravity. Due to gravity, when an object is at rest, it has an acceleration's magnitude of 1G; nevertheless, when in movement, its magnitude could vary from 0 to infinity, including 1G. As a result, if the sound stops when the acceleration is 1G, we could be stopping it in the middle of a movement.
+
+\subsection{Wrist}
+The first test was placing the Thingy on the swimmer's forearm, near the wrist. X ACC EN DIRECCION DEL BRAZO, CROLL Y BRAZA.
+
+The settings for the first trial were the following:
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Accelerometer
+Axis: 					X
+Volume:					60%
+Center frequency: 	1000 Hz
+Range (1G):				120 Hz
+\end{settings}
+After one lap, we were told that the tone was similar to the pump's noise, and could barely hear it. So we did a second trial with the following settings:
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Accelerometer
+Axis: 					X
+Volume:					100%
+Center frequency: 	2000 Hz
+Range (1G):				120 Hz
+\end{settings}
+
+After another lap, she told us she could only hear it when both her arm and head were out of the water.
+\subsection{Vertebrae T3}
+
+The second test was placing the Thingy on the swimmer's back, around vertebrae T3. X GYRO EN DIRECCION DEL BRAZO, CROLL Y BRAZA.
+
+The settings for the first trial were the following:
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Gyroscope
+Axis: 					X
+Volume:					60%
+Center frequency: 	1000 Hz
+Range (1G):				120 Hz
+\end{settings}
+
+After one lap, she told us that she could not hear the sound whatsoever, so we decided to crank up the volume. So we did a second trial with the following settings:
+
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Gyroscope
+Axis: 					X
+Volume:					100%
+Center frequency: 	2000 Hz
+Range (1G):				120 Hz
+\end{settings}
+
+After another lap, she still could not hear a thing, even while gliding underwater.
+\subsection{Swimming cap}
+The final test was placing the Thingy inside the swimmer's swim cap. X ACC EN DIRECCION DE LA CABEZA, CROLL Y BRAZA.
+
+The settings for the first trial were the following:
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Accelerometer
+Axis: 					X
+Volume:					100%
+Center frequency: 	2000 Hz
+Range (1G):				120 Hz
+\end{settings}
+
+
+After one lap she told us that she could hear the sound all the time, but that she could not tell apart the different tones. So we did a second trial with the following settings:
+\begin{settings}{Test 1, trial 1}
+Sensor: 					Accelerometer
+Axis: 					X
+Volume:					100%
+Center frequency: 	2000 Hz
+Range (1G):				480 Hz
+\end{settings}
+
+
+After another lap, she told us that, even though it was not perfect, she could notice the frequency change when she moved her head faster or slower.
 
