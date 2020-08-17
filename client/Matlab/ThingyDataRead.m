@@ -4,7 +4,6 @@ clc;
 %
 addpath('C:\xampp\htdocs\PFM_Nordic_Thingy_52\client\datafiles');
 
-
 volumes = [0 : 10 : 30 50];
 axis = 'XYZ';
 signs = 'PN';
@@ -39,6 +38,7 @@ for i = 1 : m
 
                 save(filename_mat, 'Acc');
             end
+            %%dataDistribution(Acc);
             means = mean(Acc);
             stds = std(Acc);
             X_mean(i, j, k) = means(1);
@@ -51,70 +51,38 @@ for i = 1 : m
     end
 end
 
-%
 volumes = [0 : 10 : 30 50];
 
-axis = 1 : 3;
-direction = 1 : 2;
 
-for i = axis
-    for j = direction
-        figure;
+%% Axis
 
-        x_m = X_mean(:, i, j);
-        x_std = X_std(:, i, j);
+std_axis = zeros(m, n);
+std_axis(:, 1) = mean(mean(X_std, 3), 2);
+std_axis(:, 2) = mean(mean(Y_std, 3), 2);
+std_axis(:, 3) = mean(mean(Z_std, 3), 2);
 
-        curve1 = x_m + x_std;
-        curve2 = x_m - x_std;
-        filling = [volumes fliplr(volumes)];
-        inBetween = [curve1.', fliplr(curve2.')];
-        s = fill(filling, inBetween, 'r');
-        alpha(s, 0.5);
-        hold on;
-        plot(volumes, x_m, 'r', 'LineWidth', 2);
 
-        y_m = Y_mean(:, i, j);
-        y_std = Y_std(:, i, j);
+figure;
 
-        curve1 = y_m + y_std;
-        curve2 = y_m - y_std;
-        filling = [volumes fliplr(volumes)];
-        inBetween = [curve1.', fliplr(curve2.')];
-        s = fill(filling, inBetween, 'g');
-        alpha(s, 0.5);
-        hold on;
-        plot(volumes, y_m, 'g', 'LineWidth', 2);
+h = plot(volumes, std_axis);
+set(h,{'LineStyle'},{'-';'--';':'})
+legend('X', 'Y', 'Z');
+xlabel('Volume [%]');
+ylabel('Standard deviation [Gs]');
 
-        z_m = Z_mean(:, i, j);
-        z_std = Z_std(:, i, j);
+%% Orientation
 
-        curve1 = z_m + z_std;
-        curve2 = z_m - z_std;
-        filling = [volumes fliplr(volumes)];
-        inBetween = [curve1.', fliplr(curve2.')];
-        s = fill(filling, inBetween, 'b');
-        alpha(s, 0.5);
-        hold on;
-        plot(volumes, z_m, 'b', 'LineWidth', 2);
+std_orienation = (X_std + Y_std + Z_std) ./ 3;
 
-        grid on;
+figure;
 
-    end
-end
-
-%%
-
-% figure;
-% y = rand(1,10); % your mean vector;
-% x = 1:numel(y);
-% std_dev = 1;
-% curve1 = y + std_dev;
-% curve2 = y - std_dev;
-% x2 = [x, fliplr(x)];
-% inBetween = [curve1, fliplr(curve2)];
-% fill(x2, inBetween, 'g');
-% hold on;
-% plot(x, y, 'r', 'LineWidth', 2);
-
+h = plot(volumes, std_orienation(:, : , 1), 'o');
+set(h,{'LineStyle'},{'-'; '--'; ':'})
+hold on;
+h = plot(volumes, std_orienation(:, : , 2), 'x');
+set(h,{'LineStyle'},{'-'; '--'; ':'})
+legend('X Up', 'Y Up', 'Z Up', 'X Down', 'Y Down', 'Z Down');
+xlabel('Volume [%]');
+ylabel('Standard deviation [Gs]');
 
 
