@@ -1,6 +1,21 @@
 Sonification denotes a way of receiving feedback from the Thingy's sensors, by adjusting the speaker's tone according to the sensor values. In this chapter, we will discuss how to make the Thingy work while being disconnected, how to create a menu to switch modes as well as tweaks made and trade-offs.
 
-The Thingy is designed exclusively to work while connected. All of its features are built to function when \bt is paired. Sonification could have quickly been done to function when connected. However, there is no real benefit to do it that way other than time. Exclusively working when \bt is connected, would consume more energy and would always require being within range of a device. The only impediment to this implementation is that we cannot start the sonification with our phones or laptops, and have to do it another way. We determined that the best method to do it is by pressing the Thingy's button. 
+The Thingy is designed exclusively to work while connected. All of its features are built to function when \bt is paired. Sonification could have quickly been done to function when connected. However, there is no real benefit to do it that way other than time. Exclusively working when \bt is connected, would consume more energy and would always require being within range of a device. The only impediment to this implementation is that we cannot start the sonification with our phones or laptops, and have to do it another way. We determined that the best method to do it is by pressing the Thingy's button.
+
+In code fragment \ref{cd:m_sonification}, we can see the struct used for this application.
+
+\lstinputlisting[linerange={173-182}, firstnumber=173, style=customc, caption=m\_sonification struct  defined in $drv\_motion.c$, label=cd:m_sonification]{../../source/drivers/drv_motion.c}
+
+\section{Working without \bt}
+There are many ways of devising sonification, from a brand new module to modifying each sensor's data processing function to enable sound to come out, and all the options between them. On the one hand, starting from scratch liberates us from existing restrictions but also uses up more of the limited resources. On the other hand, trying to fit the existing functions is unnecessarily more complex and repetitive. We chose a blended approach, treat sonification as a new \gls{ble} characteristic without actually sending any data.
+
+Treating sonification as a characteristic enables us to create a brand new function to process the sensor data without consuming as many resources and is less complex but still leaves some restrictions. 
+
+Since we are approaching it as a characteristic that does not use \gls{ble}, we need to create a pseudo-characteristic that behaves the same way when data processing occurs but does not interact with \gls{ble} whatsoever. Considering it is not using \gls{ble}, we cannot initiate it the same way as the rest of them. As a result, we have created new enabling and disabling functions that get called when we press the button. We can see them in code fragment \ref{cd:sonification_enable}.
+
+\lstinputlisting[linerange={1174-1205}, firstnumber=1174, style=customc, caption=Enabling and disabling functions defined in $drv\_motion.c$,  label=cd:sonification_enable]{../../source/drivers/drv_motion.c}
+
+One key aspect is that, by default, the Thingy will go into sleep mode if it is not connected to another device after three minutes. To avoid this problem, we are using the $ble\_slow\_advertising\_set()$ function, disabling the Thingy's sleep mode when sonification is enabled. We are going to explain the rest of the functions called within the functions in the following sections.
 
 \section{Beeping Sound}
 
@@ -29,23 +44,24 @@ In code fragment \ref{cd:update_functions}, we have the newly created functions 
 \makebox[\linewidth][c]{$\smash{\vdots}$}
 \lstinputlisting[linerange={481-483}, firstnumber=481, style=customc, caption= New functions defined in $nrf\_drv\_pwm.c$,  label=cd:update_functions]{../../sdk_components/drivers_nrf/pwm/nrf_drv_pwm.c}
 
-
 In code fragment \ref{cd:tone_start}, we have the function provided by Nordic to output a tone given a frequency, duration and volume, which calls the playback function.
 \lstinputlisting[linerange={489-491}, firstnumber=489, style=customc, nolol]{../../source/drivers/drv_speaker.c}
 \makebox[\linewidth][c]{$\smash{\vdots}$}
-\lstinputlisting[linerange={529-529}, firstnumber=529, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\lstinputlisting[linerange={529-529}, firstnumber=528, style=customc, nolol]{../../source/drivers/drv_speaker.c}
 \makebox[\linewidth][c]{$\smash{\vdots}$}
 \lstinputlisting[linerange={535-536}, firstnumber=535, style=customc, caption= $drv\_speaker\_tone\_start$ defined in $drv\_speaker.c$,  label=cd:tone_start]{../../source/drivers/drv_speaker.c}
 
 In code fragment \ref{cd:tone_update}, we have the newly created function to output a new tone given a frequency, duration and volume, which calls the playback function.
-\lstinputlisting[linerange={538-540}, firstnumber=438, style=customc, nolol]{../../source/drivers/drv_speaker.c}
+\lstinputlisting[linerange={538-540}, firstnumber=538, style=customc, nolol]{../../source/drivers/drv_speaker.c}
 \makebox[\linewidth][c]{$\smash{\vdots}$}
 \lstinputlisting[linerange={578-578}, firstnumber=578, style=customc, nolol]{../../source/drivers/drv_speaker.c}
 \makebox[\linewidth][c]{$\smash{\vdots}$}
 \lstinputlisting[linerange={584-585}, firstnumber=584, style=customc, caption= $drv\_speaker\_multi\_tone\_update$ defined in $drv\_speaker.c$,  label=cd:tone_update]{../../source/drivers/drv_speaker.c}
 
-Since a sound recording cannot be played on a pdf, the best next way to analyse the beeping sound is by checking the recording's spectrum \ap{cd:audioToSensor.m}. We are going to compare two 1000Hz tone recordings at a 100Hz refresh rate, one using the existing functions and the other one using the new ones. Additionally, using the spectrogram's data, we can obtain the frequency with the most power for any given time.
-In Figure \ref{fig:spectro}, we can see both spectrograms. Subfigure \ref{fig:spectro_no_beep} has a clear band where most of its power is, centred at 1000Hz, whereas \ref{fig:spectro_beep} also has a band, but it is less clear since the power is more evenly distributed.
+If we look at the code fragments in this section, the are not many differences between the old and the new functions. One is not using $nrf\_pwm\_seq\_refresh\_set()$ and $nrf\_pwm\_seq\_end\_delay\_se()t$ in the new version (\ref{cd:nrf_pwm_sequence_set}). The other difference is not calling $nrf_pwm_task_trigger$ (\ref{cd:start_functions}). By themselves, these changes have no effect, however, the combination of both makes the beeping sound disappear.
+
+\subsection{Empirical evidence}
+Since a sound recording cannot be played on a pdf, the best next way to analyse the beeping sound is by checking the recording's spectrum \ap{cd:audioToSensor}. We are going to compare two 1000Hz tone recordings at a 100Hz refresh rate, one using the existing functions and the other one using the new ones. In Figure \ref{fig:spectro}, we can see both spectrograms. Subfigure \ref{fig:spectro_no_beep} has a clear band where most of its power is, centred at 1000Hz, whereas \ref{fig:spectro_beep} also has a band, but it is less clear since the power is more evenly distributed.
 \begin{figure}[hbt!]
 	\centering
 	\begin{subfigure}{0.48\linewidth}
@@ -64,7 +80,7 @@ In Figure \ref{fig:spectro}, we can see both spectrograms. Subfigure \ref{fig:sp
 	\label{fig:spectro}
 \end{figure}
 
-In Figure \ref{fig:spectro_freq}, we can see both spectrograms with the dominant frequency outlined. It is clear that we only get a unique tone using the new functions (subfigure \ref{fig:spectro_freq_no_beep}), whereas the given functions give us the beeping sound as mentioned earlier (subfigure \ref{fig:spectro_freq_beep}).
+Additionally, using the spectrogram's data, we can obtain the frequency with the most power for any given time. In Figure \ref{fig:spectro_freq}, we can see both spectrograms with the dominant frequency outlined. It is clear that we only get a unique tone using the new functions (subfigure \ref{fig:spectro_freq_no_beep}), whereas the given functions give us the beeping sound as mentioned earlier (subfigure \ref{fig:spectro_freq_beep}).
 
 \begin{figure}[hbt!]
 	\centering
@@ -86,6 +102,68 @@ In Figure \ref{fig:spectro_freq}, we can see both spectrograms with the dominant
 
 
 \section{Design trade-off}
+
+There is only one trade-off that we have to make when it comes to sonification, volumes vs precision. Let us put it simply. If we recall Figure \ref{fig:acc_cal}, there is minimal variance in the accelerometer's output when the Thingy is not moving. However, this is not the case when the Thingy is at rest, but the speaker is working. In this scenario, the speaker makes the \gls{pcb} vibrate in a way that it distorts the accelerometers measurements. We are now going to analyse if and how much the distortion increases with volume \ap{cd:dataDistribution}.
+
+
+\begin{figure}[hbt!]
+	\centering
+	\begin{subfigure}{\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{dataDistributionVol0}
+		\caption{Speaker off}
+		\label{fig:dataDistributionNoVol}
+	\end{subfigure}
+	\begin{subfigure}{\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{dataDistributionVol10}
+		\caption{Speaker on at 10\% volume}
+		\label{fig:dataDistributionVol}
+	\end{subfigure}
+	\caption{Accelerometer's data distribution comparison when speaker is on vs off}
+	\label{fig:dataDistribution}
+\end{figure}
+
+As we can see in Figure \ref{fig:dataDistribution}, there is a notable difference between both plots. When the speaker is turned off (subfigure \ref{fig:dataDistributionNoVol}), we have a normal distribution, with a small standard deviation. On the other hand, in subfigure  \ref{fig:dataDistributionVol}, we the speaker is on at a constant 1000Hz, we have a bimodal distribution, with the peaks at both ends and a standard deviation up to tenfold at just 10\% volume.
+
+The bimodal distribution with peaks at the extremes resembles a skewed Gaussian distribution that has been mirrored and added to itself. Consequently, even though the mean value remains constant, these values are the least likely to be read by the sensor.
+
+
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\linewidth]{dataDistributionVsVol}
+	\caption{Accelerometer's data distribution by axis vs volume}
+	\label{fig:dataDistributionVsVol}
+\end{figure}
+
+\begin{figure}[hbt!]
+	\centering
+	\includegraphics[width=\linewidth]{dataDistributionVsFace}
+	\caption{Accelerometer's data distribution by orientation vs volume}
+	\label{fig:dataDistributionVsFace}
+\end{figure}
+
+\fg{fig:dataDistributionVsVol}, we can see a graph comparing each axis' standard deviation (precision) \ap{cd:ThingyDataRead}  vs volume.
+
+This issue poses the dilemma between precision and volume, if the volume is too low, it might not be heard. Ideally, we would be using the Thingy in a low noise environment, where volume is not a factor. As a consequence, we want the lowest volume that can be heard by the user.
+
+\section{Menu}
+
+Due to the volume vs precision trade-off, there is no clear best option. As a result, to avoid having to update the firmware every time we want to tweak a parameter, we have devised modifiable parameters. Currently, we can adjust the volume, precision and sensor used.
+
+To perform it, we created a menu with different modes. Each mode slightly differs from the previous one and can be accessed at the push of a button. On top of that, each mode has a unique LED colour assigned to it. We can see the logic behind this menu in code fragment \ref{cd:menu}. 
+
+
+\lstinputlisting[linerange={358-359}, firstnumber=358, style=customc, nolol]{../../source/modules/m_ui.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={374-410}, firstnumber=374, style=customc, nolol]{../../source/modules/m_ui.c}
+\makebox[\linewidth][c]{$\smash{\vdots}$}
+\lstinputlisting[linerange={413-413}, firstnumber=413, style=customc, caption=Sonification's menu defined in $m\_ui.c$, label=cd:menu]{../../source/modules/m_ui.c}
+
+Instead of a button triggered menu, we could have used \gls{ble} to alter the parameters. That would give us more possibilities, as the options would not be set in stone. However, that would require connecting to a custom \gls{api}, the same way we did for impact detection, which would not be convenient in places like a beach or swimming pool. Additionally, modifying the parameters over \gls{ble} would defeat the purpose of it working without it.
+
+\section{Force plates test}
+
 
 \section{Swimming test}
 
