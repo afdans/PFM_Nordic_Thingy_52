@@ -57,6 +57,8 @@
 #define DEFAULT_LED_OFF_TIME_MS         3500    ///< Time LED is off between cycles [ms].
 #define DEFAULT_LED_FADE_IN_TIME        2000    ///< LED fade in time [ms].
 #define DEFAULT_LED_FADE_OUT_TIME        500    ///< LED fade out time [ms].
+#define BUTTON_PRESSED                     1    ///< Button is pressed.
+#define MENU_OPTIONS                       7    ///< Number of options in the menu.
 
 /** @brief User interface module status return codes.
  */

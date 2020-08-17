@@ -146,40 +146,39 @@ static struct
 
 static struct
 {
-    int16_t  acc_x[MAX_IMPACT_SAMPLES];
-    int16_t  acc_y[MAX_IMPACT_SAMPLES];
-    int16_t  acc_z[MAX_IMPACT_SAMPLES];
-    int16_t  gyro_x[MAX_IMPACT_SAMPLES];
-    int16_t  gyro_y[MAX_IMPACT_SAMPLES];
-    int16_t  gyro_z[MAX_IMPACT_SAMPLES];
-    int32_t  roll[MAX_IMPACT_SAMPLES];
-    int32_t  pitch[MAX_IMPACT_SAMPLES];
-    int32_t  yaw[MAX_IMPACT_SAMPLES];
-    uint16_t currentIndex;
-    uint16_t impactIndex;
-    uint16_t writeIndex;
-    int32_t  previousAcceleration;
-    bool     impact;
+    int16_t  acc_x[MAX_IMPACT_SAMPLES];     // Acceleration's X axis data array
+    int16_t  acc_y[MAX_IMPACT_SAMPLES];     // Acceleration's Y axis data array
+    int16_t  acc_z[MAX_IMPACT_SAMPLES];     // Acceleration's Z axis data array
+    int16_t  gyro_x[MAX_IMPACT_SAMPLES];    // Gyroscope's X axis data array
+    int16_t  gyro_y[MAX_IMPACT_SAMPLES];    // Gyroscope's Y axis data array
+    int16_t  gyro_z[MAX_IMPACT_SAMPLES];    // Gyroscope's Z axis data array
+    int32_t  roll[MAX_IMPACT_SAMPLES];      // Euler angles' roll data array
+    int32_t  pitch[MAX_IMPACT_SAMPLES];     // Euler angles' pitch data array
+    int32_t  yaw[MAX_IMPACT_SAMPLES];       // Euler angles' yaw data array
+    uint16_t currentIndex;                  // Current index
+    uint16_t impactIndex;                   // Index when impact is detected
+    uint16_t writeIndex;                    // Index of data we are sending
+    int32_t  previousAcceleration;          // Last acceleration, used to compare to current one
+    bool     impact;                        // Determine if impact has occurred
 } m_impact;
 
 static struct{
-    int16_t entryIndex;
-    int16_t exitIndex;
-    int16_t size;
-    int16_t data[MAX_QUEUE_SIZE];
-    uint16_t type;
+    int16_t entryIndex;             // Entering data index
+    int16_t exitIndex;              // Exiting data index
+    int16_t size;                   // Queue's size
+    int16_t data[MAX_QUEUE_SIZE];   // Data queue
+    uint16_t type;                  // Data type
 } m_impact_queue;
 
 static struct
 {
-    uint8_t                volume;
-    uint16_t               duration;
-    uint16_t               center_freq_hz;
-    bool                   enabled;
-    bool                   precision;
-    int16_t                stationary;
-    sonification_channel_t channel;
-    sonification_sensor_t  sensor;
+    uint8_t                volume;          // Tone's volume
+    uint16_t               duration;        // Tone's duration
+    uint16_t               center_freq_hz;  // Center frequency (at rest)
+    bool                   precision;       // Determine if precision is low or high
+    int16_t                stationary;      // Number of continous samples without movement
+    sonification_sensor_t  sensor;          // Sensor being used
+    sonification_channel_t channel;         // Sensor's channel being used
 } m_sonification;
 
 /* Compass bias written to MPU-9250 at boot. Used to compensate for biases introduced by Thingy HW.
@@ -1181,7 +1180,7 @@ uint32_t drv_motion_enable_sonification(sonification_channel_t channel){
     ble_slow_advertising_set(SLEEP_MODE_DISABLE);
 
     m_sonification.center_freq_hz = SONIFICATION_FREQ_CENTER;
-    m_sonification.duration       = 1000 / (m_motion.motion_freq_hz);
+    m_sonification.duration       = 1000 / (m_motion.motion_freq_hz); // to miliseconds
     m_sonification.stationary     = 0;
 
     drv_motion_sonification_set_volume(100);

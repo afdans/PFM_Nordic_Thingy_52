@@ -131,14 +131,15 @@ typedef uint32_t drv_motion_feature_mask_t;
 
 #define SCALER_EULER_HIGH 1
 #define SCALER_EULER_LOW 4
-#define SCALER_ACC_HIGH 4
-#define SCALER_ACC_LOW 12
+#define SCALER_ACC_HIGH 16
+#define SCALER_ACC_LOW 48
 #define SCALER_GYRO_HIGH 5
 #define SCALER_GYRO_LOW 12
 
+#define SONIFICATION_FREQ_CENTER 2000
 #define GYROSCOPE_MOVEMENT_THRESHOLD 20
 #define GYROSCOPE_MOVEMENT_THRESHOLD_SAMPLES 6
-#define MINIMUM_FREQUENCY_OFFSET -900
+#define MINIMUM_FREQUENCY_OFFSET -1900
 
 
 #define ACC_SIZE 3
@@ -146,8 +147,6 @@ typedef uint32_t drv_motion_feature_mask_t;
 #define EULER_SIZE 6
 #define IMPACT_SIZE (EULER_SIZE + GYRO_SIZE + ACC_SIZE)
 #define MAX_QUEUE_SIZE (IMPACT_SIZE * MAX_IMPACT_SAMPLES)
-
-#define SONIFICATION_FREQ_CENTER 1000
 
 #define DRV_MOTION_FEATURE_MASK                   (DRV_MOTION_FEATURE_MASK_RAW_ACCEL      |     \
                                                    DRV_MOTION_FEATURE_MASK_RAW_GYRO       |     \

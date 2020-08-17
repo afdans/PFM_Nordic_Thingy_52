@@ -62,7 +62,6 @@ static const ble_uis_led_t m_default_config_disconnected = UI_CONFIG_DEFAULT_DIS
 static const ble_uis_led_t m_default_config_error        = UI_CONFIG_DEFAULT_ERROR;
 
 static uint8_t menu_index;
-static uint8_t pressed;
 
 /**@brief Treats r, g, b integer values as boolean and returns corresponing color mix.
  *
@@ -372,41 +371,36 @@ static void button_evt_handler(uint8_t pin_no, uint8_t button_action)
                 APP_ERROR_CHECK(err_code);
             }
         } else {
-            //m_ui_led_set(255, 0, 0);
-            // Crear const o defines para los colores por ejemplo
-            // RED_R = 255, RED_G = 0, RED_B = 0
-            // CASE1_R = RED_R, CASE1_G = RED_G, CASE1_B = RED_B...
-            pressed++;
-            pressed %= 2; // Porque hay un evento cuando se presiona y otro cuando se suelta, por eso iba de dos en dos yo
-            if(pressed){
+            if(button_action == BUTTON_PRESSED){
                 menu_index++;
-                menu_index %= 7; // Crear un define en vez de hardcoding
+                menu_index %= MENU_OPTIONS;
                 switch(menu_index){
                     case 1:
-                        drv_motion_enable_sonification(SONIFICATION_CHANNEL_RAW_ACCEL_Y);
-                        drv_motion_sonification_set_volume(20);
+                        drv_motion_enable_sonification(SONIFICATION_CHANNEL_RAW_ACCEL_X);
+                        drv_motion_sonification_set_volume(60);
                         m_ui_led_set(255, 0 , 0);
                         break;
                     case 2:
-                        drv_motion_sonification_set_sensitivity(1);
+                        drv_motion_sonification_set_precision(1);
                         m_ui_led_set(255 ,255, 255);
                         break;
                     case 3:
-                        drv_motion_sonification_set_sensitivity(0);
-                        drv_motion_sonification_set_volume(60);
+                        drv_motion_sonification_set_channel(SONIFICATION_CHANNEL_ROLL);
+                        drv_motion_sonification_set_volume(100);
+                        drv_motion_sonification_set_precision(0);
                         m_ui_led_set(0, 255, 0);
                         break;
                     case 4:
-                        drv_motion_sonification_set_sensitivity(1);
+                        drv_motion_sonification_set_precision(1);
                         m_ui_led_set(0, 255, 255);
                         break;
                     case 5:
                         drv_motion_sonification_set_channel(SONIFICATION_CHANNEL_RAW_GYRO_X);
-                        drv_motion_sonification_set_sensitivity(0);
+                        drv_motion_sonification_set_precision(0);
                         m_ui_led_set(255, 0, 255);
                         break;
                     case 6:
-                        drv_motion_sonification_set_channel(SONIFICATION_CHANNEL_RAW_GYRO_X);
+                        drv_motion_sonification_set_precision(1);
                         m_ui_led_set(255, 50 , 0);
                         break;
                     default:
@@ -477,8 +471,6 @@ static ret_code_t button_init(void)
     RETURN_IF_ERROR(err_code);
 
     menu_index = 0;
-    pressed = 0;
-
     return app_button_enable();
 }
 
